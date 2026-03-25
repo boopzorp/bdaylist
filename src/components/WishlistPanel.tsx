@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -68,7 +69,9 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
     const handleScroll = () => {
       // Threshold for mobile scroll detection (sidebar height roughly)
       if (window.innerWidth < 768) {
-        setShowFloatingDate(window.scrollY > 450);
+        // We use a dynamic threshold: in admin mode, the profile + form is taller
+        const threshold = isAdmin ? 500 : 400;
+        setShowFloatingDate(window.scrollY > threshold);
       } else {
         setShowFloatingDate(false);
       }
@@ -76,7 +79,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     if (mounted) {

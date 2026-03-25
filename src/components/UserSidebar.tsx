@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -30,8 +31,8 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, onAd
   ];
 
   return (
-    <aside className="w-full h-full bg-background flex flex-col justify-center items-center relative overflow-hidden p-6 md:p-8 lg:p-12">
-      {/* Background Abstract Elements - Hidden or simplified on mobile */}
+    <aside className="w-full h-full bg-background flex flex-col justify-center items-center relative overflow-hidden p-8 md:p-8 lg:p-12">
+      {/* Background Abstract Elements */}
       <div className="absolute top-1/4 left-1/4 w-32 h-32 border border-border rounded-full animate-float-slow opacity-30 md:opacity-50" />
       <div className="absolute bottom-1/3 right-1/4 w-24 h-24 border border-border rotate-45 animate-float-slower opacity-30 md:opacity-50" />
       
@@ -44,7 +45,7 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, onAd
 
       {/* Profile Content */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-xs md:max-w-none">
-        <div className="relative mb-6 md:mb-8">
+        <div className="relative mb-8">
           <div className="absolute inset-0 rounded-full animate-pulse-ring" />
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border border-border bg-card p-1 relative z-10">
             <img 
@@ -55,21 +56,21 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, onAd
           </div>
         </div>
 
-        <h1 className="text-xl md:text-2xl font-light tracking-[0.2em] uppercase text-foreground mb-2 text-center">
+        <h1 className="text-xl md:text-2xl font-light tracking-[0.2em] uppercase text-foreground mb-6 text-center">
           Aria Noir
         </h1>
         
-        <div className="flex flex-col items-center gap-3 md:gap-4 mt-4 md:mt-8 font-mono text-xs md:text-sm tracking-tight text-muted-foreground">
-          <span className="uppercase tracking-widest bg-muted/50 px-4 py-1 rounded-full border border-border/40 opacity-80">
+        <div className="flex flex-col items-center gap-6 font-mono">
+          <span className="text-[10px] md:text-[11px] uppercase tracking-[0.3em] bg-muted/50 px-5 py-2 rounded-full border border-border/40 opacity-80 text-muted-foreground">
             Oct 24
           </span>
-          <p className="max-w-[180px] md:max-w-[220px] text-center italic leading-relaxed opacity-70 px-2">
-            "Minimalism is about focusing on what matters."
+          <p className="max-w-[200px] text-center text-[10px] md:text-[11px] uppercase tracking-widest leading-relaxed opacity-60 px-4">
+            Minimalism is about focusing on what matters.
           </p>
         </div>
 
         {/* Theme Switcher */}
-        <div className="mt-8 md:mt-12 flex items-center gap-3">
+        <div className="mt-12 flex items-center gap-3">
           {themes.map((t) => (
             <button
               key={t.id}
@@ -85,17 +86,17 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, onAd
         </div>
 
         {/* Admin Toggle */}
-        <div className="mt-8 md:mt-12">
+        <div className="mt-12">
           <Button 
             variant="outline" 
             size="sm" 
             onClick={onAdminToggle}
-            className="rounded-full text-[9px] md:text-[10px] uppercase tracking-widest h-8 px-4 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all"
+            className="rounded-full text-[9px] uppercase tracking-widest h-8 px-5 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all"
           >
             {isAdmin ? (
-              <><UserCircle size={14} className="mr-2" /> Admin View</>
+              <><UserCircle size={14} className="mr-2" /> Admin Mode</>
             ) : (
-              <><Eye size={14} className="mr-2" /> Consumer View</>
+              <><Eye size={14} className="mr-2" /> Friends Mode</>
             )}
           </Button>
         </div>
