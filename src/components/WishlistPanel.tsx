@@ -36,9 +36,11 @@ export interface WishlistItem {
 
 interface WishlistPanelProps {
   isAdmin: boolean;
+  isProfileCollapsed: boolean;
+  onToggleProfile: (collapsed: boolean) => void;
 }
 
-export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
+export default function WishlistPanel({ isAdmin, isProfileCollapsed, onToggleProfile }: WishlistPanelProps) {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [newCategory, setNewCategory] = useState('');
@@ -46,7 +48,6 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [showFloatingDate, setShowFloatingDate] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'all' | 'like' | 'need'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -67,19 +68,18 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
     setMounted(true);
 
     const handleScroll = () => {
-      // Threshold for mobile scroll detection (sidebar height roughly)
-      if (window.innerWidth < 768) {
-        // We use a dynamic threshold: in admin mode, the profile + form is taller
+      // If we're on mobile and the profile isn't collapsed yet, check if we should collapse it
+      if (window.innerWidth < 768 && !isProfileCollapsed) {
         const threshold = isAdmin ? 500 : 400;
-        setShowFloatingDate(window.scrollY > threshold);
-      } else {
-        setShowFloatingDate(false);
+        if (window.scrollY > threshold) {
+          onToggleProfile(true);
+        }
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isAdmin]);
+  }, [isAdmin, isProfileCollapsed, onToggleProfile]);
 
   useEffect(() => {
     if (mounted) {
@@ -152,15 +152,19 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
     setEditingItem(null);
   };
 
-  const scrollToProfile = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const restoreProfile = () => {
+    onToggleProfile(false);
+    // Smoothly scroll to top once the profile is restored
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
   };
 
   if (!mounted) return null;
 
   return (
     <div ref={containerRef} className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 xl:p-24">
-      {/* Header section is sticky on mobile after sidebar scrolls away */}
+      {/* Sticky header that holds the title and the return-to-profile pill */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md -mx-6 px-6 py-4 mb-8 md:mb-12 md:relative md:bg-transparent md:backdrop-blur-none md:p-0 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
         <div className="flex items-center justify-between w-full md:w-auto">
           <div>
@@ -170,8 +174,8 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
             <div className="w-10 md:w-12 h-[1px] bg-primary mt-2 md:mt-6 hidden md:block" />
           </div>
 
-          {/* Sticky Mobile Date Pill */}
-          {showFloatingDate && (
+          {/* Sticky Mobile Date Pill: Only shows when profile is collapsed */}
+          {isProfileCollapsed && (
             <div className="relative md:hidden animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="absolute -top-3 -right-2 text-accent animate-float-slow">
                 <Sparkles size={14} />
@@ -180,7 +184,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
                 <PartyPopper size={12} />
               </div>
               <button 
-                onClick={scrollToProfile}
+                onClick={restoreProfile}
                 className="bg-card px-4 py-1.5 rounded-full border border-border shadow-sm animate-pulse-ring flex items-center gap-2"
               >
                 <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground whitespace-nowrap">
