@@ -1,12 +1,13 @@
 
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { Cake, Gift, PartyPopper, UserCircle, Eye, Share2, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Cake, Gift, PartyPopper, Share2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useFirebase, useCollection, useDoc, useUser } from '@/firebase';
+import { useFirebase, useDoc, useUser, useMemoFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
+import { doc } from 'firebase/firestore';
 
 interface UserSidebarProps {
   currentTheme: string;
@@ -25,14 +26,14 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
     setMounted(true);
   }, []);
 
-  const profileRef = useMemo(() => {
+  const profileRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
     return doc(firestore, 'userProfiles', targetUserId);
   }, [firestore, targetUserId]);
 
   const { data: profile } = useDoc(profileRef);
 
-  const friendsQuery = useMemo(() => {
+  const friendsQuery = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
     return doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
   }, [firestore, targetUserId]);
@@ -91,7 +92,7 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
             {profile?.birthdate ? profile.birthdate.split('-').slice(1).join('/') : "Oct 24"}
           </span>
           <p className="max-w-[200px] text-center text-[10px] md:text-[11px] uppercase tracking-widest leading-relaxed opacity-60 px-4">
-            {showFriends ? "Friends in the stream" : "Minimalism is about focusing on what matters."}
+            {showFriends ? "Friends in the stream" : (profile?.quote || "Minimalism is about focusing on what matters.")}
           </p>
         </div>
 
