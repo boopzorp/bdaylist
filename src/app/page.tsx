@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -7,7 +6,7 @@ import WishlistPanel from '@/components/WishlistPanel';
 import LandingPage from '@/components/LandingPage';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -18,7 +17,6 @@ export default function Home() {
   const [isFriendMode, setIsFriendMode] = useState(false);
 
   useEffect(() => {
-    // Check for shared wishlist in URL
     const params = new URLSearchParams(window.location.search);
     const sharedUid = params.get('u');
     
@@ -29,10 +27,32 @@ export default function Home() {
     } else if (user) {
       setTargetUserId(user.uid);
       setIsFriendMode(false);
+      ensureUserProfile(user.uid);
       const savedTheme = localStorage.getItem('wishstream_theme');
       if (savedTheme) setTheme(savedTheme);
+    } else {
+      setTargetUserId(null);
+      setIsFriendMode(false);
     }
   }, [user]);
+
+  const ensureUserProfile = async (uid: string) => {
+    if (!firestore) return;
+    const profileRef = doc(firestore, 'userProfiles', uid);
+    const profileSnap = await getDoc(profileRef);
+    if (!profileSnap.exists()) {
+      await setDoc(profileRef, {
+        id: uid,
+        displayName: "New Streamer",
+        avatarUrl: `https://picsum.photos/seed/${uid}/400/400`,
+        theme: 'theme-noir',
+        quote: "Minimal desires. Thoughtful acquisitions.",
+        createdAt: new Date().toISOString(),
+      });
+    } else if (profileSnap.data().theme) {
+      setTheme(profileSnap.data().theme);
+    }
+  };
 
   const fetchTargetUserTheme = async (uid: string) => {
     if (!firestore) return;
@@ -49,6 +69,9 @@ export default function Home() {
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
     localStorage.setItem('wishstream_theme', newTheme);
+    if (user && firestore) {
+      setDoc(doc(firestore, 'userProfiles', user.uid), { theme: newTheme }, { merge: true });
+    }
   };
 
   const handleToggleProfile = (collapsed: boolean) => {
@@ -63,8 +86,8 @@ export default function Home() {
     );
   }
 
-  // Show landing page if not logged in and no shared user ID in URL
-  if (!user && !targetUserId) {
+  // Show landing page if not logged in AND not viewing a shared UID
+  if (!user && !isFriendMode) {
     return <LandingPage />;
   }
 

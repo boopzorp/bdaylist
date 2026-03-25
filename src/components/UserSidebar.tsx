@@ -1,13 +1,13 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Cake, Gift, PartyPopper, Share2, Users } from 'lucide-react';
+import { Cake, Gift, PartyPopper, Share2, Users, LogOut, Copy, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useFirebase, useDoc, useUser, useMemoFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { doc } from 'firebase/firestore';
+import { initiateSignOut } from '@/firebase/non-blocking-login';
 
 interface UserSidebarProps {
   currentTheme: string;
@@ -17,7 +17,7 @@ interface UserSidebarProps {
 }
 
 export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targetUserId }: UserSidebarProps) {
-  const { user } = useUser();
+  const { user, auth } = useFirebase();
   const { firestore } = useFirebase();
   const [mounted, setMounted] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
@@ -60,6 +60,13 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
     });
   };
 
+  const handleLogout = () => {
+    if (auth) {
+      initiateSignOut(auth);
+      window.location.href = '/';
+    }
+  };
+
   return (
     <aside className="w-full h-full bg-background flex flex-col justify-center items-center relative overflow-hidden p-8 md:p-8 lg:p-12">
       <div className="absolute top-1/4 left-1/4 w-32 h-32 border border-border rounded-full animate-float-slow opacity-30 md:opacity-50" />
@@ -84,15 +91,15 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
         </div>
 
         <h1 className="text-xl md:text-2xl font-light tracking-[0.2em] uppercase text-foreground mb-6 text-center">
-          {profile?.displayName || "Aria Noir"}
+          {profile?.displayName || (isAdmin ? "Your Stream" : "Friend's Stream")}
         </h1>
         
         <div className="flex flex-col items-center gap-6 font-mono">
           <span className="text-[10px] md:text-[11px] uppercase tracking-[0.3em] bg-muted/50 px-5 py-2 rounded-full border border-border/40 opacity-80 text-muted-foreground">
-            {profile?.birthdate ? profile.birthdate.split('-').slice(1).join('/') : "Oct 24"}
+            {profile?.birthdate ? profile.birthdate.split('-').slice(1).join('/') : "OCT 24"}
           </span>
           <p className="max-w-[200px] text-center text-[10px] md:text-[11px] uppercase tracking-widest leading-relaxed opacity-60 px-4">
-            {showFriends ? "Friends in the stream" : (profile?.quote || "Minimalism is about focusing on what matters.")}
+            {showFriends ? "Guestbook" : (profile?.quote || "Focus on what matters.")}
           </p>
         </div>
 
@@ -109,35 +116,46 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
           </div>
         ) : (
           <>
-            <div className="mt-12 flex items-center gap-3">
-              {themes.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => isAdmin && onThemeChange(t.id)}
-                  className={cn(
-                    "w-4 h-4 rounded-full transition-all duration-300 ring-offset-2 ring-offset-background hover:scale-125",
-                    t.color,
-                    currentTheme === t.id ? "ring-2 ring-primary" : "ring-1 ring-border",
-                    !isAdmin && "cursor-default opacity-50"
-                  )}
-                  title={t.label}
-                />
-              ))}
-            </div>
+            {isAdmin && (
+              <div className="mt-12 flex items-center gap-3">
+                {themes.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => onThemeChange(t.id)}
+                    className={cn(
+                      "w-4 h-4 rounded-full transition-all duration-300 ring-offset-2 ring-offset-background hover:scale-125",
+                      t.color,
+                      currentTheme === t.id ? "ring-2 ring-primary" : "ring-1 ring-border"
+                    )}
+                    title={t.label}
+                  />
+                ))}
+              </div>
+            )}
 
             <div className="mt-12 flex flex-col gap-3 w-full max-w-[180px]">
               {isAdmin ? (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleShare}
-                  className="rounded-full text-[9px] uppercase tracking-widest h-10 px-5 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all"
-                >
-                  <Share2 size={14} className="mr-2" /> Copy Share Link
-                </Button>
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleShare}
+                    className="rounded-full text-[9px] uppercase tracking-widest h-10 px-5 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all"
+                  >
+                    <Share2 size={14} className="mr-2" /> Share Stream
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleLogout}
+                    className="text-[8px] uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-destructive"
+                  >
+                    <LogOut size={12} className="mr-2" /> Log Out
+                  </Button>
+                </>
               ) : (
                 <div className="bg-muted/30 p-4 rounded-2xl border border-border/40 text-center">
-                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground">Viewing as Friend</span>
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground">Viewing Friend's Stream</span>
                 </div>
               )}
               
