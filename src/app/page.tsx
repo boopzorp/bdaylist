@@ -80,7 +80,7 @@ export default function Home() {
       id: user.uid,
       ...data,
       avatarUrl: `https://picsum.photos/seed/${user.uid}/400/400`,
-      theme: 'theme-noir',
+      theme: theme,
       createdAt: new Date().toISOString(),
     });
     setShowSetup(false);
@@ -95,7 +95,7 @@ export default function Home() {
   }
 
   if (!user && !isFriendMode) {
-    return <LandingPage />;
+    return <LandingPage currentTheme={theme} onThemeChange={handleThemeChange} />;
   }
 
   return (

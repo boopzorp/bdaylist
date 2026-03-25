@@ -1,23 +1,72 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PartyPopper, Gift, Sparkles, ChevronRight, Heart, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthDialog from '@/components/AuthDialog';
+import { cn } from '@/lib/utils';
 
-export default function LandingPage() {
+interface LandingPageProps {
+  currentTheme: string;
+  onThemeChange: (theme: string) => void;
+}
+
+export default function LandingPage({ currentTheme, onThemeChange }: LandingPageProps) {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const themes = [
+    { id: 'theme-noir', color: 'bg-neutral-900', label: 'Noir' },
+    { id: 'theme-birthday', color: 'bg-pink-400', label: 'Birthday' },
+    { id: 'theme-mint', color: 'bg-emerald-400', label: 'Mint' },
+    { id: 'theme-sunset', color: 'bg-orange-400', label: 'Sunset' },
+    { id: 'theme-lavender', color: 'bg-purple-400', label: 'Lavender' },
+  ];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden relative">
+    <div className={cn("min-h-screen flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden relative transition-colors duration-700 bg-background", currentTheme)}>
+      {/* Interactive Cursor Spotlight */}
+      <div 
+        className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
+        style={{
+          background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, hsla(var(--primary), 0.15), transparent 80%)`,
+        }}
+      />
+      
       {/* Dynamic Background Elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-100/50 rounded-full blur-[120px] animate-float-slow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-50/50 rounded-full blur-[120px] animate-float-slower" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-purple-50/30 rounded-full blur-[150px]" />
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-30 z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/20 rounded-full blur-[140px] animate-float-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] bg-accent/20 rounded-full blur-[140px] animate-float-slower" />
       </div>
 
-      <div className="relative z-10 max-w-3xl text-center space-y-16">
+      <div className="relative z-10 max-w-3xl text-center space-y-12">
+        {/* Theme Picker on Landing */}
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-muted-foreground/60">Choose your vibe</span>
+          <div className="flex justify-center gap-4">
+            {themes.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onThemeChange(t.id)}
+                className={cn(
+                  "w-5 h-5 rounded-full transition-all duration-500 ring-offset-2 ring-offset-background hover:scale-125",
+                  t.color,
+                  currentTheme === t.id ? "ring-2 ring-primary scale-110 shadow-lg" : "ring-1 ring-border opacity-40 hover:opacity-100"
+                )}
+                title={t.label}
+              />
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-6">
           <div className="flex items-center justify-center gap-4 text-primary/30">
             <ShoppingBag size={18} />
@@ -44,7 +93,7 @@ export default function LandingPage() {
             </p>
           </div>
           
-          <div className="flex flex-col items-center justify-center gap-6 pt-8">
+          <div className="flex flex-col items-center justify-center gap-6 pt-4">
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button 
                 onClick={() => setAuthMode('signup')}
