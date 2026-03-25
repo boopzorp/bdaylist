@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -68,7 +67,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const { data: items } = useCollection<WishlistItem>(itemsRef);
 
-  // Optimized shared status query: filter by userId to match target stream
   const sharedRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
     return query(
@@ -161,12 +159,10 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     if (!item) return;
 
     if (isAdmin) {
-      // Admin toggles main status
       await updateDoc(doc(firestore, 'userProfiles', targetUserId, 'wishlistItems', id), {
         purchased: !item.purchased
       });
     } else {
-      // Friend "ticks off" - this increments fulfillment count in shared collection
       const savedFriend = localStorage.getItem(`friend_data_${targetUserId}`);
       const friendData = savedFriend ? JSON.parse(savedFriend) : { name: friendName, shareName: false };
       
@@ -184,7 +180,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
       toast({
         title: "Ticked Off!",
-        description: "Your friend will see this was fulfilled (but won't know it was you!).",
+        description: "Surprise! Fulfillment recorded.",
       });
     }
   };
@@ -207,7 +203,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     setFriendName(data.name);
     setShowOnboarding(false);
 
-    // Add to Guestbook
     const guestDocRef = doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
     await setDoc(guestDocRef, {
       guests: arrayUnion({
@@ -231,7 +226,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
         <div className="flex items-center justify-between w-full md:w-auto">
           <div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
-              Wishlist.
+              BddayList.
             </h2>
             <div className="w-10 md:w-12 h-[1px] bg-primary mt-2 md:mt-6 hidden md:block" />
           </div>
@@ -288,7 +283,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       </header>
 
       {isAdmin && (
-        <form onSubmit={handleAddItem} className="mb-12 md:mb-20 bg-card/40 p-5 md:p-6 rounded-2xl border border-border/50 backdrop-blur-sm relative z-10">
+        <form onSubmit={handleAddItem} className="mb-12 md:mb-20 bg-card/40 p-5 md:p-6 rounded-2xl border border-border/50 backdrop-blur-sm relative z-10 shadow-sm">
           <div className="flex flex-col gap-5 md:gap-6">
             <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
               <div className="flex-1 w-full relative">
@@ -296,8 +291,8 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
                   type="text"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  placeholder="What are you desiring?"
-                  className="w-full bg-transparent border-b border-border py-2 md:py-3 text-base md:text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                  placeholder="Add a new birthday desire..."
+                  className="w-full bg-transparent border-b border-border py-2 md:py-3 text-base md:text-lg font-light placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
               <div className="w-full sm:w-1/3 relative">
@@ -306,7 +301,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="Category"
-                  className="w-full bg-transparent border-b border-border py-2 md:py-3 text-base md:text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                  className="w-full bg-transparent border-b border-border py-2 md:py-3 text-base md:text-lg font-light placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
                 />
                 <button 
                   type="button"
@@ -353,7 +348,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
                 className="flex items-center justify-center h-10 w-full xs:w-10 rounded-full border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-30 group shrink-0"
               >
                 <Plus size={18} className="transition-transform group-hover:rotate-90 duration-300" />
-                <span className="xs:hidden ml-2 text-[10px] uppercase tracking-widest font-medium">Add Wish</span>
+                <span className="xs:hidden ml-2 text-[10px] uppercase tracking-widest font-medium">Add to Stream</span>
               </button>
             </div>
           </div>
@@ -382,7 +377,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
           })
         ) : (
           <div className="py-16 md:py-24 text-center text-muted-foreground font-light italic text-sm">
-            {items ? 'No items match your current filter.' : 'Loading your desires...'}
+            {items ? 'No items in this stream yet.' : 'Loading BddayList...'}
           </div>
         )}
       </div>

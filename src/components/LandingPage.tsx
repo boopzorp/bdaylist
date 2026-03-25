@@ -1,8 +1,7 @@
-
 "use client";
 
 import React from 'react';
-import { PartyPopper, Gift, Sparkles, ChevronRight } from 'lucide-react';
+import { PartyPopper, Gift, Sparkles, ChevronRight, Heart, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/firebase';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
@@ -15,50 +14,72 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F7F9] flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden relative">
-      {/* Decorative Elements */}
-      <div className="absolute top-1/4 left-1/4 w-64 h-64 border border-[#787D88]/10 rounded-full animate-float-slow" />
-      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 border border-[#787D88]/10 rotate-45 animate-float-slower" />
-      
-      <div className="relative z-10 max-w-2xl text-center space-y-12">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden relative">
+      {/* Dynamic Background Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-100/50 rounded-full blur-[120px] animate-float-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-50/50 rounded-full blur-[120px] animate-float-slower" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-purple-50/30 rounded-full blur-[150px]" />
+      </div>
+
+      <div className="relative z-10 max-w-3xl text-center space-y-16">
         <div className="space-y-6">
-          <div className="flex items-center justify-center gap-4 text-[#787D88] opacity-50">
-            <Gift size={20} />
-            <div className="w-12 h-[1px] bg-current" />
-            <PartyPopper size={20} />
+          <div className="flex items-center justify-center gap-4 text-primary/30">
+            <ShoppingBag size={18} />
+            <div className="w-8 h-[1px] bg-current" />
+            <Heart size={18} />
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-extralight tracking-tighter text-[#787D88] leading-tight">
-            Wish<span className="font-normal italic">Stream</span>
+          <h1 className="text-6xl md:text-8xl font-extralight tracking-tighter text-foreground leading-tight">
+            Bdday<span className="font-normal italic text-primary">List</span>
           </h1>
           
-          <p className="text-[#787D88] text-sm md:text-base font-mono uppercase tracking-[0.3em] opacity-60">
-            Minimal desires. Thoughtful acquisitions.
+          <p className="text-muted-foreground text-[10px] md:text-xs font-mono uppercase tracking-[0.4em]">
+            The Minimalist Birthday Stream.
           </p>
         </div>
 
-        <div className="space-y-8">
-          <p className="text-[#787D88] font-light text-lg md:text-xl leading-relaxed max-w-lg mx-auto italic">
-            "Focus on what truly matters. Create a stream of desires and share the joy with your inner circle."
-          </p>
+        <div className="space-y-10">
+          <div className="max-w-xl mx-auto space-y-4">
+            <h2 className="text-2xl md:text-3xl font-light text-foreground tracking-tight">
+              Gifting should be <span className="underline decoration-primary/20 underline-offset-8">thoughtful</span>, not cluttered.
+            </h2>
+            <p className="text-muted-foreground font-light text-base md:text-lg leading-relaxed italic">
+              "Create a curated stream of desires. Share it with your circle. Watch the joy unfold in real-time while keeping the best parts a surprise."
+            </p>
+          </div>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
-            <Button 
-              onClick={handleStart}
-              className="bg-[#787D88] text-white hover:bg-[#787D88]/90 rounded-full px-10 py-7 text-xs uppercase tracking-widest transition-all hover:scale-105"
-            >
-              Start your stream <ChevronRight size={14} className="ml-2" />
-            </Button>
+          <div className="flex flex-col items-center justify-center gap-6 pt-8">
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <Button 
+                onClick={handleStart}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-12 py-8 text-[11px] uppercase tracking-[0.2em] transition-all hover:scale-105 shadow-xl shadow-primary/10"
+              >
+                Start your BddayList <ChevronRight size={14} className="ml-2" />
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleStart}
+                className="rounded-full px-12 py-8 text-[11px] uppercase tracking-[0.2em] border-border hover:bg-muted transition-all"
+              >
+                Sign In
+              </Button>
+            </div>
             
-            <div className="flex items-center gap-2 text-[#787D88]/40 font-mono text-[10px] uppercase tracking-widest">
-              <Sparkles size={12} /> Simple. Private. Social.
+            <div className="flex items-center gap-4 text-muted-foreground/50 font-mono text-[9px] uppercase tracking-widest pt-4">
+              <span className="flex items-center gap-1.5"><Sparkles size={10} /> AI-Enhanced</span>
+              <span className="flex items-center gap-1.5"><PartyPopper size={10} /> Private Mode</span>
+              <span className="flex items-center gap-1.5"><Gift size={10} /> Shared Lists</span>
             </div>
           </div>
         </div>
       </div>
 
-      <footer className="absolute bottom-12 text-[#787D88]/30 font-mono text-[10px] uppercase tracking-widest">
-        Aria Noir © 2024
+      <footer className="absolute bottom-12 flex flex-col items-center gap-2">
+        <div className="w-12 h-[1px] bg-border mb-2" />
+        <span className="text-muted-foreground/30 font-mono text-[9px] uppercase tracking-widest">
+          EST. 2024 • Minimalist Gifting
+        </span>
       </footer>
     </div>
   );

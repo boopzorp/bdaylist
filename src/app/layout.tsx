@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'WishStream | Clean Wishlist Management',
-  description: 'Manage your wishlist with minimal design and AI-powered enhancements.',
+  title: 'BddayList | Minimal Birthday Wishlists',
+  description: 'Create, share, and fulfill birthday desires with minimal design and total privacy.',
 };
 
 export default function RootLayout({
