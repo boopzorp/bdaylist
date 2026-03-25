@@ -1,10 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { PartyPopper, Gift, Sparkles, ChevronRight, Heart, ShoppingBag } from 'lucide-react';
+import { PartyPopper, Gift, Sparkles, ChevronRight, Heart, ShoppingBag, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthDialog from '@/components/AuthDialog';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LandingPageProps {
   currentTheme: string;
@@ -47,26 +53,31 @@ export default function LandingPage({ currentTheme, onThemeChange }: LandingPage
         <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] bg-accent/20 rounded-full blur-[140px] animate-float-slower" />
       </div>
 
-      <div className="relative z-10 max-w-3xl text-center space-y-12">
-        {/* Theme Picker on Landing */}
-        <div className="flex flex-col items-center gap-4 mb-8">
-          <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-muted-foreground/60">Choose your vibe</span>
-          <div className="flex justify-center gap-4">
+      {/* Neat Theme Menu */}
+      <div className="absolute top-8 right-8 z-50">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="rounded-full gap-2 text-[10px] uppercase tracking-widest font-mono opacity-60 hover:opacity-100">
+              <Palette size={14} /> Change Vibe
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover/80 backdrop-blur-md border-border/50 rounded-2xl p-2 min-w-[140px]">
             {themes.map((t) => (
-              <button
-                key={t.id}
+              <DropdownMenuItem 
+                key={t.id} 
                 onClick={() => onThemeChange(t.id)}
-                className={cn(
-                  "w-5 h-5 rounded-full transition-all duration-500 ring-offset-2 ring-offset-background hover:scale-125",
-                  t.color,
-                  currentTheme === t.id ? "ring-2 ring-primary scale-110 shadow-lg" : "ring-1 ring-border opacity-40 hover:opacity-100"
-                )}
-                title={t.label}
-              />
+                className="flex items-center gap-3 cursor-pointer rounded-xl p-2 focus:bg-primary/5"
+              >
+                <div className={cn("w-3 h-3 rounded-full", t.color)} />
+                <span className="text-[10px] uppercase tracking-widest font-mono">{t.label}</span>
+                {currentTheme === t.id && <div className="ml-auto w-1 h-1 bg-primary rounded-full" />}
+              </DropdownMenuItem>
             ))}
-          </div>
-        </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
+      <div className="relative z-10 max-w-3xl text-center space-y-12">
         <div className="space-y-6">
           <div className="flex items-center justify-center gap-4 text-primary/30">
             <ShoppingBag size={18} />
@@ -109,12 +120,6 @@ export default function LandingPage({ currentTheme, onThemeChange }: LandingPage
                 Sign In
               </Button>
             </div>
-            
-            <div className="flex items-center gap-4 text-muted-foreground/50 font-mono text-[9px] uppercase tracking-widest pt-4">
-              <span className="flex items-center gap-1.5"><Sparkles size={10} /> AI-Enhanced</span>
-              <span className="flex items-center gap-1.5"><PartyPopper size={10} /> Private Mode</span>
-              <span className="flex items-center gap-1.5"><Gift size={10} /> Shared Lists</span>
-            </div>
           </div>
         </div>
       </div>
@@ -122,7 +127,7 @@ export default function LandingPage({ currentTheme, onThemeChange }: LandingPage
       <footer className="absolute bottom-12 flex flex-col items-center gap-2">
         <div className="w-12 h-[1px] bg-border mb-2" />
         <span className="text-muted-foreground/30 font-mono text-[9px] uppercase tracking-widest">
-          EST. 2024 • Minimalist Gifting
+          Made with ❤️
         </span>
       </footer>
 
