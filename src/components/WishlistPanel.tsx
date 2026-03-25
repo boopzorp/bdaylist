@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Sparkles, Loader2, Filter, Heart, ShoppingBag } from 'lucide-react';
+import { Plus, Sparkles, Loader2, Filter, Heart, ShoppingBag, PartyPopper } from 'lucide-react';
 import WishlistItemCard from '@/components/WishlistItemCard';
 import EditItemDialog from '@/components/EditItemDialog';
 import { suggestWishlistItemDetails } from '@/ai/flows/suggest-wishlist-item-details';
@@ -45,6 +45,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showFloatingDate, setShowFloatingDate] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'all' | 'like' | 'need'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -61,6 +62,18 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
       ]);
     }
     setMounted(true);
+
+    const handleScroll = () => {
+      // Threshold for mobile scroll detection (sidebar height roughly)
+      if (window.innerWidth < 768) {
+        setShowFloatingDate(window.scrollY > 300);
+      } else {
+        setShowFloatingDate(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -139,11 +152,33 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 xl:p-24">
       <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
-        <div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
-            Wishlist.
-          </h2>
-          <div className="w-10 md:w-12 h-[1px] bg-primary mt-4 md:mt-6" />
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
+              Wishlist.
+            </h2>
+            <div className="w-10 md:w-12 h-[1px] bg-primary mt-4 md:mt-6" />
+          </div>
+
+          {/* Sticky Mobile Date Pill */}
+          {showFloatingDate && (
+            <div className="relative md:hidden animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="absolute -top-3 -right-2 text-accent animate-float-slow">
+                <Sparkles size={14} />
+              </div>
+              <div className="absolute -bottom-2 -left-3 text-primary animate-bounce opacity-70">
+                <PartyPopper size={12} />
+              </div>
+              <button 
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="bg-muted/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-border/40 shadow-sm animate-pulse-ring flex items-center gap-2"
+              >
+                <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground whitespace-nowrap">
+                  Oct 24
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-3 w-full md:w-auto relative z-20">
