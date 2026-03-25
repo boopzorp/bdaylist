@@ -8,6 +8,7 @@ import ProfileSetupDialog from '@/components/ProfileSetupDialog';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { Sparkles, PartyPopper } from 'lucide-react';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -32,7 +33,8 @@ export default function Home() {
   const isFriendMode = useMemo(() => {
     if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
-    return !!params.get('u') && params.get('u') !== user?.uid;
+    const uParam = params.get('u');
+    return !!uParam && uParam !== user?.uid;
   }, [user]);
 
   const profileRef = useMemoFirebase(() => {
@@ -55,7 +57,7 @@ export default function Home() {
         localStorage.setItem('wishstream_theme', profile.theme);
       }
       setShowSetup(false);
-    } else if (user && user.uid === targetUserId) {
+    } else if (user && user.uid === targetUserId && !isProfileLoading) {
       // Profile definitively doesn't exist after loading check, and we are the owner
       setShowSetup(true);
     }
@@ -85,14 +87,38 @@ export default function Home() {
     setShowSetup(false);
   };
 
-  if (isUserLoading) {
+  // Determine if we should show a loading screen
+  // 1. We are waiting for Auth
+  // 2. We have a target ID (ours or a friend's) but we are still waiting for that specific profile doc
+  const isGlobalLoading = isUserLoading || (!!targetUserId && isProfileLoading);
+
+  if (isGlobalLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-6 h-6 border-t-2 border-primary rounded-full animate-spin opacity-20" />
+      <div className={cn("min-h-screen bg-background flex flex-col items-center justify-center transition-colors duration-500", theme)}>
+        <div className="relative">
+          <div className="w-16 h-16 border-2 border-primary/10 rounded-full animate-pulse flex items-center justify-center">
+            <div className="w-10 h-10 border-t-2 border-primary rounded-full animate-spin" />
+          </div>
+          <div className="absolute -top-4 -right-4 text-accent animate-bounce">
+            <Sparkles size={16} />
+          </div>
+          <div className="absolute -bottom-4 -left-4 text-primary animate-float-slow opacity-50">
+            <PartyPopper size={14} />
+          </div>
+        </div>
+        <div className="mt-8 text-center space-y-2">
+          <h2 className="text-xl font-extralight tracking-widest text-foreground animate-pulse uppercase">
+            Bdday<span className="font-normal italic">List</span>
+          </h2>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-mono">
+            {isUserLoading ? "Identifying Stream..." : "Fetching Desires..."}
+          </p>
+        </div>
       </div>
     );
   }
 
+  // Only show landing page if we are definitively NOT logged in and NOT looking at a friend's stream
   if (!user && !isFriendMode) {
     return <LandingPage currentTheme={theme} onThemeChange={handleThemeChange} />;
   }
