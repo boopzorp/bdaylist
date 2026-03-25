@@ -1,17 +1,12 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PartyPopper, Gift, Sparkles, ChevronRight, Heart, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/firebase';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import AuthDialog from '@/components/AuthDialog';
 
 export default function LandingPage() {
-  const auth = useAuth();
-
-  const handleStart = () => {
-    initiateAnonymousSignIn(auth);
-  };
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden relative">
@@ -52,14 +47,14 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-center gap-6 pt-8">
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Button 
-                onClick={handleStart}
+                onClick={() => setAuthMode('signup')}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-12 py-8 text-[11px] uppercase tracking-[0.2em] transition-all hover:scale-105 shadow-xl shadow-primary/10"
               >
                 Start your BddayList <ChevronRight size={14} className="ml-2" />
               </Button>
               <Button 
                 variant="outline"
-                onClick={handleStart}
+                onClick={() => setAuthMode('login')}
                 className="rounded-full px-12 py-8 text-[11px] uppercase tracking-[0.2em] border-border hover:bg-muted transition-all"
               >
                 Sign In
@@ -81,6 +76,14 @@ export default function LandingPage() {
           EST. 2024 • Minimalist Gifting
         </span>
       </footer>
+
+      {authMode && (
+        <AuthDialog 
+          open={!!authMode} 
+          onOpenChange={(open) => !open && setAuthMode(null)} 
+          mode={authMode} 
+        />
+      )}
     </div>
   );
 }

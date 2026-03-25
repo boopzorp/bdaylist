@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import UserSidebar from '@/components/UserSidebar';
 import WishlistPanel from '@/components/WishlistPanel';
 import LandingPage from '@/components/LandingPage';
+import ProfileSetupDialog from '@/components/ProfileSetupDialog';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase } from '@/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -15,6 +16,7 @@ export default function Home() {
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [isProfileCollapsed, setIsProfileCollapsed] = useState(false);
   const [isFriendMode, setIsFriendMode] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -27,7 +29,7 @@ export default function Home() {
     } else if (user) {
       setTargetUserId(user.uid);
       setIsFriendMode(false);
-      ensureUserProfile(user.uid);
+      checkProfileStatus(user.uid);
       const savedTheme = localStorage.getItem('wishstream_theme');
       if (savedTheme) setTheme(savedTheme);
     } else {
@@ -36,19 +38,12 @@ export default function Home() {
     }
   }, [user]);
 
-  const ensureUserProfile = async (uid: string) => {
+  const checkProfileStatus = async (uid: string) => {
     if (!firestore) return;
     const profileRef = doc(firestore, 'userProfiles', uid);
     const profileSnap = await getDoc(profileRef);
     if (!profileSnap.exists()) {
-      await setDoc(profileRef, {
-        id: uid,
-        displayName: "New Streamer",
-        avatarUrl: `https://picsum.photos/seed/${uid}/400/400`,
-        theme: 'theme-noir',
-        quote: "Minimal desires. Thoughtful acquisitions.",
-        createdAt: new Date().toISOString(),
-      });
+      setShowSetup(true);
     } else if (profileSnap.data().theme) {
       setTheme(profileSnap.data().theme);
     }
@@ -78,6 +73,19 @@ export default function Home() {
     setIsProfileCollapsed(collapsed);
   };
 
+  const handleSetupComplete = async (data: { displayName: string; birthdate: string; quote: string }) => {
+    if (!user || !firestore) return;
+    const profileRef = doc(firestore, 'userProfiles', user.uid);
+    await setDoc(profileRef, {
+      id: user.uid,
+      ...data,
+      avatarUrl: `https://picsum.photos/seed/${user.uid}/400/400`,
+      theme: 'theme-noir',
+      createdAt: new Date().toISOString(),
+    });
+    setShowSetup(false);
+  };
+
   if (isUserLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -86,7 +94,6 @@ export default function Home() {
     );
   }
 
-  // Show landing page if not logged in AND not viewing a shared UID
   if (!user && !isFriendMode) {
     return <LandingPage />;
   }
@@ -94,17 +101,19 @@ export default function Home() {
   return (
     <div className={cn("flex flex-col md:flex-row min-h-screen bg-background transition-colors duration-500", theme)}>
       {/* Sidebar: Profile & Controls */}
-      <div className={cn(
-        "w-full md:w-[35%] lg:w-[30%] border-b md:border-b-0 md:border-r border-border md:sticky md:top-0 md:h-screen shrink-0 transition-all duration-500",
-        isProfileCollapsed ? "hidden md:block" : "block"
-      )}>
-        <UserSidebar 
-          currentTheme={theme} 
-          onThemeChange={handleThemeChange} 
-          isAdmin={!isFriendMode} 
-          targetUserId={targetUserId}
-        />
-      </div>
+      {!isProfileCollapsed && (
+        <div className={cn(
+          "w-full md:w-[35%] lg:w-[30%] border-b md:border-b-0 md:border-r border-border md:sticky md:top-0 md:h-screen shrink-0 transition-all duration-500",
+          isProfileCollapsed ? "hidden" : "block"
+        )}>
+          <UserSidebar 
+            currentTheme={theme} 
+            onThemeChange={handleThemeChange} 
+            isAdmin={!isFriendMode} 
+            targetUserId={targetUserId}
+          />
+        </div>
+      )}
 
       {/* Main Content: Wishlist */}
       <main className="flex-1 bg-card min-h-screen">
@@ -115,6 +124,8 @@ export default function Home() {
           onToggleProfile={handleToggleProfile}
         />
       </main>
+
+      <ProfileSetupDialog open={showSetup} onComplete={handleSetupComplete} />
     </div>
   );
 }

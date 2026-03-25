@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Cake, Gift, PartyPopper, Share2, Users, LogOut, Copy, ExternalLink, Sparkles } from 'lucide-react';
+import { Cake, Gift, PartyPopper, Share2, Users, LogOut, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useFirebase, useDoc, useUser, useMemoFirebase } from '@/firebase';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
 import { doc } from 'firebase/firestore';
 import { initiateSignOut } from '@/firebase/non-blocking-login';
+import { format } from 'date-fns';
 
 interface UserSidebarProps {
   currentTheme: string;
@@ -17,8 +18,7 @@ interface UserSidebarProps {
 }
 
 export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targetUserId }: UserSidebarProps) {
-  const { user, auth } = useFirebase();
-  const { firestore } = useFirebase();
+  const { user, auth, firestore } = useFirebase();
   const [mounted, setMounted] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
 
@@ -67,6 +67,10 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
     }
   };
 
+  const formattedBirthday = profile?.birthdate 
+    ? format(new Date(profile.birthdate), 'MMM dd').toUpperCase()
+    : "OCT 24";
+
   return (
     <aside className="w-full h-full bg-background flex flex-col justify-center items-center relative overflow-hidden p-8 md:p-8 lg:p-12">
       <div className="absolute top-1/4 left-1/4 w-32 h-32 border border-border rounded-full animate-float-slow opacity-30 md:opacity-50" />
@@ -103,7 +107,7 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
         
         <div className="flex flex-col items-center gap-6 font-mono">
           <span className="text-[10px] md:text-[11px] uppercase tracking-[0.3em] bg-muted/50 px-5 py-2 rounded-full border border-border/40 opacity-80 text-muted-foreground shadow-sm">
-            {profile?.birthdate ? profile.birthdate.split('-').slice(1).join('/') : "OCT 24"}
+            {formattedBirthday}
           </span>
           <p className="max-w-[200px] text-center text-[10px] md:text-[11px] uppercase tracking-widest leading-relaxed opacity-60 px-4 font-light italic">
             {showFriends ? "Guestbook" : (profile?.quote || "Focus on what matters.")}

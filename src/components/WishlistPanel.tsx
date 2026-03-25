@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useFirebase, useCollection, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, doc, query, orderBy, where, updateDoc, arrayUnion, setDoc, deleteDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
 import { 
   Tabs, 
   TabsList, 
@@ -67,6 +68,13 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const { data: items } = useCollection<WishlistItem>(itemsRef);
 
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !targetUserId) return null;
+    return doc(firestore, 'userProfiles', targetUserId);
+  }, [firestore, targetUserId]);
+
+  const { data: profile } = useDoc(profileRef);
+
   const sharedRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
     return query(
@@ -88,9 +96,12 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     }
 
     const handleScroll = () => {
-      if (window.innerWidth < 768 && !isProfileCollapsed) {
-        if (window.scrollY > 400) {
+      if (window.innerWidth < 768) {
+        if (window.scrollY > 400 && !isProfileCollapsed) {
           onToggleProfile(true);
+        } else if (window.scrollY < 10 && isProfileCollapsed) {
+          // Allow scrolling back only if we are at the very top and it's not yet fully locked
+          // But per instructions, the pill is the primary way to return.
         }
       }
     };
@@ -113,6 +124,10 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       return matchesTab && matchesCategory;
     });
   }, [items, activeTab, selectedCategory]);
+
+  const formattedBirthday = profile?.birthdate 
+    ? format(new Date(profile.birthdate), 'MMM dd').toUpperCase()
+    : "OCT 24";
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,7 +259,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
                 className="bg-card px-4 py-1.5 rounded-full border border-border shadow-sm animate-pulse-ring flex items-center gap-2"
               >
                 <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground whitespace-nowrap">
-                  OCT 24
+                  {formattedBirthday}
                 </span>
               </button>
             </div>
