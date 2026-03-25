@@ -20,8 +20,8 @@ export default function Home() {
 
   return (
     <div className={`flex flex-col md:flex-row min-h-screen bg-background transition-colors duration-500 ${theme}`}>
-      {/* Left Column: Dynamic Profile */}
-      <div className="w-full md:w-[35%] lg:w-[30%] border-b md:border-b-0 md:border-r border-border md:sticky md:top-0 md:h-screen">
+      {/* Sidebar: Profile & Controls */}
+      <div className="w-full md:w-[35%] lg:w-[30%] border-b md:border-b-0 md:border-r border-border md:sticky md:top-0 md:h-screen shrink-0">
         <UserSidebar 
           currentTheme={theme} 
           onThemeChange={handleThemeChange} 
@@ -30,8 +30,8 @@ export default function Home() {
         />
       </div>
 
-      {/* Right Column: Wishlist */}
-      <main className="flex-1 bg-card h-full min-h-screen no-scrollbar overflow-y-auto">
+      {/* Main Content: Wishlist */}
+      <main className="flex-1 bg-card min-h-screen">
         <WishlistPanel isAdmin={isAdmin} />
       </main>
     </div>

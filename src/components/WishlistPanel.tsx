@@ -46,7 +46,6 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [mounted, setMounted] = useState(false);
   
-  // Filtering state
   const [activeTab, setActiveTab] = useState<'all' | 'like' | 'need'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -138,30 +137,30 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
   if (!mounted) return null;
 
   return (
-    <div className="max-w-4xl mx-auto p-8 lg:p-16 xl:p-24">
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+    <div className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 xl:p-24">
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
         <div>
-          <h2 className="text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
             Wishlist.
           </h2>
-          <div className="w-12 h-[1px] bg-primary mt-6" />
+          <div className="w-10 md:w-12 h-[1px] bg-primary mt-4 md:mt-6" />
         </div>
 
-        <div className="flex flex-col gap-4 w-full md:w-auto relative z-20">
+        <div className="flex flex-col gap-3 w-full md:w-auto relative z-20">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="bg-muted/50 border border-border h-10 p-1">
-              <TabsTrigger value="all" className="text-[10px] uppercase tracking-widest px-4">All</TabsTrigger>
-              <TabsTrigger value="like" className="text-[10px] uppercase tracking-widest px-4 gap-1.5">
-                <Heart size={10} /> Likes
+            <TabsList className="bg-muted/50 border border-border h-9 md:h-10 p-1 w-full flex">
+              <TabsTrigger value="all" className="flex-1 text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4">All</TabsTrigger>
+              <TabsTrigger value="like" className="flex-1 text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4 gap-1.5">
+                <Heart size={10} className="hidden xs:inline" /> Likes
               </TabsTrigger>
-              <TabsTrigger value="need" className="text-[10px] uppercase tracking-widest px-4 gap-1.5">
-                <ShoppingBag size={10} /> Needs
+              <TabsTrigger value="need" className="flex-1 text-[9px] md:text-[10px] uppercase tracking-widest px-2 md:px-4 gap-1.5">
+                <ShoppingBag size={10} className="hidden xs:inline" /> Needs
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-[180px] h-9 text-[10px] uppercase tracking-widest bg-background border-border shadow-sm">
+            <SelectTrigger className="w-full md:w-[180px] h-9 text-[9px] md:text-[10px] uppercase tracking-widest bg-background border-border shadow-sm">
               <div className="flex items-center gap-2">
                 <Filter size={12} className="text-muted-foreground" />
                 <SelectValue placeholder="Category" />
@@ -179,8 +178,8 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
       </header>
 
       {isAdmin && (
-        <form onSubmit={handleAddItem} className="mb-20 bg-card/40 p-6 rounded-2xl border border-border/50 backdrop-blur-sm relative z-10">
-          <div className="flex flex-col gap-6">
+        <form onSubmit={handleAddItem} className="mb-12 md:mb-20 bg-card/40 p-5 md:p-6 rounded-2xl border border-border/50 backdrop-blur-sm relative z-10">
+          <div className="flex flex-col gap-5 md:gap-6">
             <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
               <div className="flex-1 w-full relative">
                 <input
@@ -188,7 +187,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   placeholder="What are you desiring?"
-                  className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                  className="w-full bg-transparent border-b border-border py-2 md:py-3 text-base md:text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
               <div className="w-full sm:w-1/3 relative">
@@ -197,7 +196,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="Category"
-                  className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                  className="w-full bg-transparent border-b border-border py-2 md:py-3 text-base md:text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
                 />
                 <button 
                   type="button"
@@ -210,13 +209,13 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-4">
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setNewType('like')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest border transition-all duration-300",
+                    "flex-1 xs:flex-none px-3 md:px-4 py-1.5 rounded-full text-[9px] md:text-[10px] uppercase tracking-widest border transition-all duration-300",
                     newType === 'like' 
                       ? "bg-primary text-primary-foreground border-primary" 
                       : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
@@ -228,7 +227,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
                   type="button"
                   onClick={() => setNewType('need')}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest border transition-all duration-300",
+                    "flex-1 xs:flex-none px-3 md:px-4 py-1.5 rounded-full text-[9px] md:text-[10px] uppercase tracking-widest border transition-all duration-300",
                     newType === 'need' 
                       ? "bg-primary text-primary-foreground border-primary" 
                       : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
@@ -241,16 +240,17 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
               <button 
                 type="submit"
                 disabled={!newItemName.trim()}
-                className="flex items-center justify-center h-10 w-10 rounded-full border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-30 group shrink-0"
+                className="flex items-center justify-center h-10 w-full xs:w-10 rounded-full border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-30 group shrink-0"
               >
                 <Plus size={18} className="transition-transform group-hover:rotate-90 duration-300" />
+                <span className="xs:hidden ml-2 text-[10px] uppercase tracking-widest font-medium">Add Wish</span>
               </button>
             </div>
           </div>
         </form>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-1 md:space-y-2">
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => (
             <WishlistItemCard 
@@ -263,7 +263,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
             />
           ))
         ) : (
-          <div className="py-24 text-center text-muted-foreground font-light italic">
+          <div className="py-16 md:py-24 text-center text-muted-foreground font-light italic text-sm">
             No items match your current filter.
           </div>
         )}

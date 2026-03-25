@@ -24,13 +24,13 @@ export default function WishlistItemCard({ item, isAdmin, onToggle, onRemove, on
   };
 
   return (
-    <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-6 border-b border-border hover:border-primary/30 transition-colors">
-      <div className="flex items-center gap-6 flex-1">
+    <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-4 md:py-6 border-b border-border hover:border-primary/30 transition-colors">
+      <div className="flex items-start md:items-center gap-4 md:gap-6 flex-1">
         <button 
           onClick={handleToggle}
           disabled={!isAdmin}
           className={cn(
-            "w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 flex-shrink-0",
+            "w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 flex-shrink-0 mt-0.5 md:mt-0",
             item.purchased 
               ? 'bg-primary border-primary text-primary-foreground' 
               : 'border-border text-transparent hover:border-primary',
@@ -41,27 +41,27 @@ export default function WishlistItemCard({ item, isAdmin, onToggle, onRemove, on
           <Check size={12} strokeWidth={3} />
         </button>
         
-        <div className="flex flex-col">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col min-w-0 flex-1">
+          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
             <span className={cn(
-              "text-lg font-light transition-all duration-300",
+              "text-base md:text-lg font-light transition-all duration-300 truncate",
               item.purchased ? 'text-muted-foreground line-through' : 'text-foreground'
             )}>
               {item.name}
             </span>
             {item.type && (
-              <span className="opacity-40" title={item.type === 'like' ? 'Thing I Like' : 'Thing I Need'}>
+              <span className="opacity-40 shrink-0" title={item.type === 'like' ? 'Thing I Like' : 'Thing I Need'}>
                 {item.type === 'like' ? <Heart size={14} /> : <ShoppingBag size={14} />}
               </span>
             )}
           </div>
           
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-muted/50 px-2 py-0.5 rounded-md border border-border/50">
+            <span className="text-[8px] md:text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-muted/50 px-1.5 md:px-2 py-0.5 rounded-md border border-border/50 shrink-0">
               {item.category}
             </span>
             {item.note && (
-              <span className="text-[10px] text-muted-foreground italic truncate max-w-[200px]">
+              <span className="text-[9px] md:text-[10px] text-muted-foreground italic truncate max-w-[150px] md:max-w-[200px]">
                 {item.note}
               </span>
             )}
@@ -69,7 +69,7 @@ export default function WishlistItemCard({ item, isAdmin, onToggle, onRemove, on
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mt-4 sm:mt-0 pl-12 sm:pl-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
+      <div className="flex items-center gap-1 md:gap-2 mt-3 sm:mt-0 pl-10 sm:pl-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
         {item.url && (
           <a 
             href={item.url} 
