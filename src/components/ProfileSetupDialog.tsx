@@ -12,22 +12,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Cake, Sparkles, User, Quote } from 'lucide-react';
+import { Cake, Sparkles, User, Quote, Image as ImageIcon } from 'lucide-react';
 
 interface ProfileSetupDialogProps {
   open: boolean;
-  onComplete: (data: { displayName: string; birthdate: string; quote: string }) => void;
+  onComplete: (data: { displayName: string; birthdate: string; quote: string; avatarUrl: string }) => void;
 }
 
 export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDialogProps) {
   const [displayName, setDisplayName] = useState('');
   const [birthdate, setBirthdate] = useState('');
   const [quote, setQuote] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayName || !birthdate) return;
-    onComplete({ displayName, birthdate, quote });
+    onComplete({ 
+      displayName, 
+      birthdate, 
+      quote, 
+      avatarUrl: avatarUrl || `https://picsum.photos/seed/${Math.random()}/400/400`
+    });
   };
 
   return (
@@ -55,6 +61,20 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
                   onChange={(e) => setDisplayName(e.target.value)}
                   className="pl-10 rounded-xl border-border/60 h-12 focus:ring-primary"
                   required
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="avatarUrl" className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Profile Image URL (Optional)</Label>
+              <div className="relative">
+                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                <Input 
+                  id="avatarUrl" 
+                  placeholder="https://example.com/photo.jpg" 
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  className="pl-10 rounded-xl border-border/60 h-12 focus:ring-primary"
                 />
               </div>
             </div>

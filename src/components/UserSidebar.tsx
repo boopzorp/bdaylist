@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Cake, Gift, PartyPopper, Share2, Users, LogOut, Sparkles } from 'lucide-react';
+import { Cake, Gift, PartyPopper, Share2, Users, LogOut, Sparkles, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { toast } from '@/hooks/use-toast';
-import { doc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { initiateSignOut } from '@/firebase/non-blocking-login';
 import { format } from 'date-fns';
+import EditProfileDialog from '@/components/EditProfileDialog';
 
 interface UserSidebarProps {
   currentTheme: string;
@@ -21,6 +22,7 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
   const { user, auth, firestore } = useFirebase();
   const [mounted, setMounted] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -67,6 +69,15 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
     }
   };
 
+  const handleSaveProfile = async (data: any) => {
+    if (!user || !firestore) return;
+    await setDoc(doc(firestore, 'userProfiles', user.uid), data, { merge: true });
+    toast({
+      title: "Profile Updated",
+      description: "Your settings have been saved.",
+    });
+  };
+
   const formattedBirthday = profile?.birthdate 
     ? format(new Date(profile.birthdate), 'MMM dd').toUpperCase()
     : "OCT 24";
@@ -83,19 +94,27 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
       </div>
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-xs md:max-w-none">
-        <div className="relative mb-8">
+        <div className="relative mb-8 group">
           <div className="absolute inset-0 rounded-full animate-pulse-ring opacity-20" />
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border border-border bg-card p-1 relative z-10 shadow-inner">
             <img 
               src={profile?.avatarUrl || "https://picsum.photos/seed/bdday-user/400/400"} 
               alt="Profile" 
-              className="w-full h-full object-cover rounded-full grayscale hover:grayscale-0 transition-all duration-700 ease-in-out"
+              className="w-full h-full object-cover rounded-full grayscale group-hover:grayscale-0 transition-all duration-700 ease-in-out"
             />
           </div>
+          {isAdmin && (
+            <button 
+              onClick={() => setIsEditDialogOpen(true)}
+              className="absolute -right-2 -bottom-2 bg-primary text-primary-foreground p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20"
+            >
+              <Settings2 size={16} />
+            </button>
+          )}
         </div>
 
         <div className="text-center mb-6">
-          <h1 className="text-xl md:text-2xl font-light tracking-[0.2em] uppercase text-foreground mb-1">
+          <h1 className="text-3xl md:text-4xl text-foreground mb-1 font-caveat tracking-tight">
             {profile?.displayName || (isAdmin ? "Your Stream" : "Bdday Stream")}
           </h1>
           <div className="flex items-center justify-center gap-2 opacity-30">
@@ -182,6 +201,20 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
           </>
         )}
       </div>
+
+      {profile && (
+        <EditProfileDialog 
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          initialData={{
+            displayName: profile.displayName || '',
+            birthdate: profile.birthdate || '',
+            quote: profile.quote || '',
+            avatarUrl: profile.avatarUrl || ''
+          }}
+          onSave={handleSaveProfile}
+        />
+      )}
     </aside>
   );
 }
