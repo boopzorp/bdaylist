@@ -2,75 +2,58 @@
 
 import React from 'react';
 import { WishlistItem } from '@/components/WishlistPanel';
-import { ExternalLink, Trash2, Tag, CalendarDays } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { ExternalLink, Trash2, Check } from 'lucide-react';
 
 interface WishlistItemCardProps {
   item: WishlistItem;
-  onRemove: (id: string) => void;
+  onToggle: () => void;
+  onRemove: () => void;
 }
 
-export default function WishlistItemCard({ item, onRemove }: WishlistItemCardProps) {
+export default function WishlistItemCard({ item, onToggle, onRemove }: WishlistItemCardProps) {
   return (
-    <div className="group bg-white p-6 rounded-2xl border border-border/50 shadow-sm transition-all hover:shadow-md hover:border-accent/20 flex flex-col sm:flex-row items-start gap-6">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xl font-bold text-primary truncate group-hover:text-accent transition-colors">
+    <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-6 border-b border-neutral-100 hover:border-neutral-300 transition-colors">
+      <div className="flex items-center gap-6 flex-1">
+        {/* Custom Checkbox */}
+        <button 
+          onClick={onToggle}
+          className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 flex-shrink-0
+            ${item.purchased 
+              ? 'bg-neutral-900 border-neutral-900 text-white' 
+              : 'border-neutral-300 text-transparent hover:border-neutral-500'}`}
+        >
+          <Check size={12} strokeWidth={3} />
+        </button>
+        
+        <div className="flex flex-col">
+          <span className={`text-lg font-light transition-all duration-300 ${item.purchased ? 'text-neutral-300 line-through' : 'text-neutral-800'}`}>
             {item.name}
-          </h3>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {item.url && (
-              <a 
-                href={item.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="p-2 hover:bg-background rounded-full text-muted-foreground hover:text-accent transition-colors"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            )}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => onRemove(item.id)}
-              className="p-2 h-9 w-9 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/5"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
+          </span>
+          <span className="text-xs font-mono text-neutral-400 mt-1 uppercase tracking-wider">
+            {item.category}
+          </span>
         </div>
+      </div>
 
-        {item.description && (
-          <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-2">
-            {item.description}
-          </p>
+      <div className="flex items-center gap-4 mt-4 sm:mt-0 pl-12 sm:pl-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
+        {item.url && (
+          <a 
+            href={item.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="p-2 text-neutral-400 hover:text-neutral-900 transition-colors"
+            aria-label="External link"
+          >
+            <ExternalLink size={16} />
+          </a>
         )}
-
-        <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border/30">
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <CalendarDays className="w-3.5 h-3.5" />
-            {format(item.createdAt, 'MMM d, yyyy')}
-          </div>
-
-          {item.tags && item.tags.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Tag className="w-3.5 h-3.5 text-muted-foreground" />
-              <div className="flex flex-wrap gap-1.5">
-                {item.tags.map(tag => (
-                  <Badge 
-                    key={tag} 
-                    variant="secondary" 
-                    className="text-[10px] px-2 py-0 h-5 bg-background text-muted-foreground border-transparent hover:bg-accent/10 hover:text-accent transition-colors"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <button 
+          onClick={onRemove}
+          className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
+          aria-label="Delete item"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
     </div>
   );

@@ -1,12 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { Calendar, User, Mail, Sparkles } from 'lucide-react';
+import { Calendar, MapPin } from 'lucide-react';
 
 export default function UserSidebar() {
-  const avatar = PlaceHolderImages.find(img => img.id === 'user-avatar');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -16,76 +13,47 @@ export default function UserSidebar() {
   if (!mounted) return null;
 
   return (
-    <div className="h-full flex flex-col p-12 bg-white relative overflow-hidden">
-      {/* Animated Elements for Micro-animations */}
-      <div className="absolute top-20 right-10 w-4 h-4 rounded-full bg-accent/20 animate-float" />
-      <div className="absolute bottom-40 left-10 w-6 h-6 rounded-full bg-primary/10 animate-float-delayed" />
-      <div className="absolute top-1/2 right-20 w-3 h-3 rounded-full bg-accent/30 animate-float-slow" />
+    <aside className="w-full h-full bg-neutral-100/50 flex flex-col justify-center items-center relative overflow-hidden p-8 lg:p-12">
+      {/* Background Abstract Elements */}
+      <div className="absolute top-1/4 left-1/4 w-32 h-32 border border-neutral-200 rounded-full animate-float-slow opacity-50" />
+      <div className="absolute bottom-1/3 right-1/4 w-24 h-24 border border-neutral-200 rotate-45 animate-float-slower opacity-50" />
+      <div className="absolute top-2/3 left-1/3 w-2 h-2 bg-neutral-300 rounded-full animate-ping" style={{ animationDuration: '4s' }} />
 
       {/* Profile Content */}
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="mb-12">
-          <h1 className="text-4xl font-headline font-bold text-primary tracking-tight mb-2">WishStream</h1>
-          <p className="text-muted-foreground text-sm font-medium">Curate your desires, beautifully.</p>
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
-          <div className="relative group">
-            <div className="absolute -inset-4 bg-accent/5 rounded-full blur-xl group-hover:bg-accent/10 transition-colors" />
-            <div className="relative w-48 h-48 rounded-full overflow-hidden border-4 border-white shadow-2xl transition-transform hover:scale-105 duration-500">
-              <Image
-                src={avatar?.imageUrl || ''}
-                alt="User Profile"
-                fill
-                className="object-cover"
-                data-ai-hint={avatar?.imageHint}
-              />
-            </div>
-            <div className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow-lg border border-border">
-              <Sparkles className="w-5 h-5 text-accent" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-primary">Alex Rivers</h2>
-            <p className="text-muted-foreground font-medium flex items-center justify-center gap-2">
-              <Mail className="w-4 h-4" /> alex@wishstream.io
-            </p>
-          </div>
-
-          <div className="w-full pt-8 space-y-4">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-background/50 border border-border/50 group hover:border-accent/30 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                <Calendar className="w-5 h-5 text-primary" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Birthdate</p>
-                <p className="text-sm font-semibold text-primary">March 15, 1995</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-background/50 border border-border/50 group hover:border-accent/30 transition-colors">
-              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
-                <User className="w-5 h-5 text-primary" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Role</p>
-                <p className="text-sm font-semibold text-primary">Chief Curator</p>
-              </div>
-            </div>
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Avatar with Micro-animation ring */}
+        <div className="relative mb-8">
+          <div className="absolute inset-0 rounded-full animate-pulse-ring" />
+          <div className="w-32 h-32 rounded-full overflow-hidden border border-neutral-200 bg-white p-1 relative z-10">
+            <img 
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" 
+              alt="Profile" 
+              className="w-full h-full object-cover rounded-full filter grayscale hover:grayscale-0 transition-all duration-700 ease-in-out"
+            />
           </div>
         </div>
 
-        <div className="mt-auto pt-12 border-t border-border/50">
-          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
-            <span>© 2024 WishStream</span>
-            <div className="flex gap-4">
-              <button className="hover:text-primary transition-colors">Settings</button>
-              <button className="hover:text-primary transition-colors">Log out</button>
-            </div>
+        <h1 className="text-2xl font-light tracking-[0.2em] uppercase text-neutral-900 mb-2 text-center">
+          Aria Noir
+        </h1>
+        
+        <div className="flex flex-col items-center gap-3 text-sm text-neutral-500 font-mono tracking-tight mt-6">
+          <div className="flex items-center gap-2 bg-white/60 px-4 py-1.5 rounded-full border border-neutral-100 shadow-sm backdrop-blur-sm">
+            <Calendar size={14} className="text-neutral-400" />
+            <span>Oct 24, 1996</span>
           </div>
+          <div className="flex items-center gap-2 bg-white/60 px-4 py-1.5 rounded-full border border-neutral-100 shadow-sm backdrop-blur-sm">
+            <MapPin size={14} className="text-neutral-400" />
+            <span>Copenhagen, DK</span>
+          </div>
+        </div>
+
+        <div className="mt-12 text-center">
+           <p className="text-xs text-neutral-400 uppercase tracking-widest leading-relaxed max-w-[200px]">
+             Curated desires & thoughtful acquisitions.
+           </p>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

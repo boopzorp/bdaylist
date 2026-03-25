@@ -3,18 +3,16 @@ import WishlistPanel from '@/components/WishlistPanel';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen w-full bg-background overflow-hidden">
-      {/* Left Sidebar - Dynamic User Details */}
-      <div className="hidden lg:block w-[400px] border-r border-border/50 h-screen fixed left-0 top-0">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#fafafa] text-neutral-900 selection:bg-neutral-200">
+      {/* Left Column: Dynamic Profile */}
+      <div className="w-full md:w-[35%] lg:w-[30%] border-b md:border-b-0 md:border-r border-neutral-200 md:sticky md:top-0 md:h-screen">
         <UserSidebar />
       </div>
 
-      {/* Right Panel - Scrollable Wishlist Items */}
-      <main className="flex-1 lg:ml-[400px] h-screen overflow-y-auto">
+      {/* Right Column: Wishlist */}
+      <main className="flex-1 bg-white h-full min-h-screen no-scrollbar overflow-y-auto">
         <WishlistPanel />
       </main>
-
-      {/* Mobile Sidebar Overlay (if needed, but proposal specifies two-column split layout) */}
     </div>
   );
 }
