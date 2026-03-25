@@ -261,10 +261,6 @@ export default function WishlistPanel() {
         )}
       </div>
 
-      <footer className="mt-32 pt-8 text-xs font-mono text-muted-foreground uppercase tracking-widest text-center border-t border-border">
-        {items.filter(i => i.purchased).length} / {items.length} Fulfilled
-      </footer>
-
       {editingItem && (
         <EditItemDialog 
           item={editingItem} 
