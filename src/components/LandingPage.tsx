@@ -30,17 +30,17 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-muted-foreground text-[10px] md:text-xs font-mono uppercase tracking-[0.4em]">
-            The Minimalist Birthday Stream.
+            THE "NO MORE GIFT RECEIPTS" BIRTHDAY APP.
           </p>
         </div>
 
         <div className="space-y-10">
           <div className="max-w-xl mx-auto space-y-4">
             <h2 className="text-2xl md:text-3xl font-light text-foreground tracking-tight">
-              Gifting should be <span className="underline decoration-primary/20 underline-offset-8">thoughtful</span>, not cluttered.
+              Stop pretending you love that scented candle.
             </h2>
             <p className="text-muted-foreground font-light text-base md:text-lg leading-relaxed italic">
-              "Create a curated stream of desires. Share it with your circle. Watch the joy unfold in real-time while keeping the best parts a surprise."
+              Drop the subtle hints. Build a sleek list of things you actually want, share it with your favorite people, and let them handle the rest. Surprise included, clutter excluded.
             </p>
           </div>
           
@@ -50,7 +50,7 @@ export default function LandingPage() {
                 onClick={() => setAuthMode('signup')}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-12 py-8 text-[11px] uppercase tracking-[0.2em] transition-all hover:scale-105 shadow-xl shadow-primary/10"
               >
-                Start your BddayList <ChevronRight size={14} className="ml-2" />
+                START DROPPING HINTS <ChevronRight size={14} className="ml-2" />
               </Button>
               <Button 
                 variant="outline"
