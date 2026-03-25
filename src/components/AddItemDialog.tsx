@@ -99,7 +99,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
+      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-background">
         <div className="bg-primary p-8 text-primary-foreground relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
           <DialogTitle className="text-2xl font-headline font-bold mb-2">Add New Wish</DialogTitle>
@@ -108,7 +108,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
           </DialogDescription>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-8 space-y-6 bg-white">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6 bg-background">
           <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="name" className="text-sm font-semibold text-primary">Item Name</Label>
@@ -201,7 +201,7 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
             </Button>
             <Button 
               type="submit" 
-              className="rounded-xl bg-primary text-white hover:bg-primary/90 px-8"
+              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 px-8"
               disabled={!name.trim()}
             >
               Save Wish

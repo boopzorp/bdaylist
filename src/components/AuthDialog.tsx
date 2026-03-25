@@ -38,7 +38,7 @@ export default function AuthDialog({ open, onOpenChange, mode: initialMode }: Au
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-white">
+      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-background">
         <div className="bg-primary p-8 text-primary-foreground relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
           <DialogTitle className="text-2xl font-light tracking-tight mb-2">
@@ -84,13 +84,13 @@ export default function AuthDialog({ open, onOpenChange, mode: initialMode }: Au
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white uppercase text-[10px] tracking-widest font-bold">
+          <Button type="submit" className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground uppercase text-[10px] tracking-widest font-bold">
             {mode === 'login' ? <><LogIn size={14} className="mr-2" /> Sign In</> : <><UserPlus size={14} className="mr-2" /> Create Account</>}
           </Button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-            <div className="relative flex justify-center text-[9px] uppercase tracking-[0.3em] font-mono"><span className="bg-white px-2 text-muted-foreground">OR</span></div>
+            <div className="relative flex justify-center text-[9px] uppercase tracking-[0.3em] font-mono"><span className="bg-background px-2 text-muted-foreground">OR</span></div>
           </div>
 
           <Button 

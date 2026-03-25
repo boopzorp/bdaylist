@@ -50,7 +50,7 @@ export default function EditProfileDialog({ open, onOpenChange, initialData, onS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-white">
+      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-background">
         <div className="bg-primary p-8 text-primary-foreground relative overflow-hidden text-center">
           <div className="absolute -top-10 -left-10 w-40 h-40 bg-accent/20 blur-3xl rounded-full" />
           <DialogTitle className="text-2xl font-light tracking-tight mb-1">Edit Profile</DialogTitle>
@@ -116,7 +116,7 @@ export default function EditProfileDialog({ open, onOpenChange, initialData, onS
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl">Cancel</Button>
-            <Button type="submit" className="rounded-xl bg-primary hover:bg-primary/90 px-8">Save Changes</Button>
+            <Button type="submit" className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 px-8">Save Changes</Button>
           </DialogFooter>
         </form>
       </DialogContent>

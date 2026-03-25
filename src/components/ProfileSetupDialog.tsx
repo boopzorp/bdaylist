@@ -38,7 +38,7 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-white">
+      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-none shadow-2xl rounded-3xl bg-background">
         <div className="bg-primary p-10 text-primary-foreground relative overflow-hidden text-center">
           <div className="absolute -top-10 -left-10 w-40 h-40 bg-accent/20 blur-3xl rounded-full" />
           <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 blur-3xl rounded-full" />
@@ -109,7 +109,7 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white uppercase text-[11px] tracking-[0.3em] font-bold shadow-lg shadow-primary/20">
+          <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground uppercase text-[11px] tracking-[0.3em] font-bold shadow-lg shadow-primary/20">
             <Sparkles size={16} className="mr-2" /> Launch my BddayList
           </Button>
         </form>

@@ -24,6 +24,16 @@ export default function Home() {
   const [isProfileCollapsed, setIsProfileCollapsed] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
 
+  // Sync theme class to body so Portals (Dialogs) pick up variables
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const body = document.body;
+      const themeClasses = ['theme-noir', 'theme-birthday', 'theme-mint', 'theme-sunset', 'theme-lavender'];
+      body.classList.remove(...themeClasses);
+      body.classList.add(theme);
+    }
+  }, [theme]);
+
   const targetUserId = useMemo(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -45,10 +55,7 @@ export default function Home() {
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
 
   useEffect(() => {
-    // If we're loading either the auth state or the profile data, wait.
     if (isUserLoading || isProfileLoading) return;
-    
-    // If no user is logged in and we're not in friend mode, we're on landing page.
     if (!user && !isFriendMode) return;
 
     if (profile) {
@@ -58,7 +65,6 @@ export default function Home() {
       }
       setShowSetup(false);
     } else if (user && user.uid === targetUserId && !isProfileLoading) {
-      // Profile definitively doesn't exist after loading check, and we are the owner
       setShowSetup(true);
     }
   }, [profile, isProfileLoading, user, isUserLoading, targetUserId, isFriendMode, theme]);
@@ -87,9 +93,6 @@ export default function Home() {
     setShowSetup(false);
   };
 
-  // Determine if we should show a loading screen
-  // 1. We are waiting for Auth
-  // 2. We have a target ID (ours or a friend's) but we are still waiting for that specific profile doc
   const isGlobalLoading = isUserLoading || (!!targetUserId && isProfileLoading);
 
   if (isGlobalLoading) {
@@ -118,7 +121,6 @@ export default function Home() {
     );
   }
 
-  // Only show landing page if we are definitively NOT logged in and NOT looking at a friend's stream
   if (!user && !isFriendMode) {
     return <LandingPage currentTheme={theme} onThemeChange={handleThemeChange} />;
   }
