@@ -8,6 +8,8 @@
     --foreground: 0 0% 4%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
     --primary: 0 0% 9%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
@@ -26,6 +28,9 @@
 
   .theme-birthday {
     --background: 330 30% 98%;
+    --foreground: 330 80% 10%;
+    --card: 0 0% 100%;
+    --popover: 0 0% 100%;
     --primary: 330 80% 60%;
     --accent: 45 100% 60%;
     --border: 330 20% 90%;
@@ -33,6 +38,9 @@
 
   .theme-mint {
     --background: 160 30% 98%;
+    --foreground: 160 80% 10%;
+    --card: 0 0% 100%;
+    --popover: 0 0% 100%;
     --primary: 160 60% 45%;
     --accent: 180 50% 50%;
     --border: 160 20% 90%;
@@ -40,6 +48,9 @@
 
   .theme-noir {
     --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+    --card: 0 0% 100%;
+    --popover: 0 0% 100%;
     --primary: 0 0% 9%;
     --accent: 0 0% 40%;
     --border: 0 0% 90%;

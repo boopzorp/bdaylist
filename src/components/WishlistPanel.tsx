@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Sparkles, Loader2, Filter, Heart, anchor, ShoppingBag } from 'lucide-react';
+import { Plus, Sparkles, Loader2, Filter, Heart, ShoppingBag } from 'lucide-react';
 import WishlistItemCard from '@/components/WishlistItemCard';
 import EditItemDialog from '@/components/EditItemDialog';
 import { suggestWishlistItemDetails } from '@/ai/flows/suggest-wishlist-item-details';
@@ -134,7 +134,7 @@ export default function WishlistPanel() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 lg:p-16 xl:p-24">
-      <header className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8">
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
           <h2 className="text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
             Wishlist.
@@ -142,7 +142,7 @@ export default function WishlistPanel() {
           <div className="w-12 h-[1px] bg-primary mt-6" />
         </div>
 
-        <div className="flex flex-col gap-4 w-full md:w-auto">
+        <div className="flex flex-col gap-4 w-full md:w-auto relative z-20">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
             <TabsList className="bg-muted/50 border border-border h-10 p-1">
               <TabsTrigger value="all" className="text-[10px] uppercase tracking-widest px-4">All</TabsTrigger>
@@ -156,13 +156,13 @@ export default function WishlistPanel() {
           </Tabs>
 
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-[180px] h-9 text-[10px] uppercase tracking-widest bg-transparent border-border">
+            <SelectTrigger className="w-full md:w-[180px] h-9 text-[10px] uppercase tracking-widest bg-background border-border shadow-sm">
               <div className="flex items-center gap-2">
                 <Filter size={12} className="text-muted-foreground" />
                 <SelectValue placeholder="Category" />
               </div>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="z-[100] bg-popover">
               {categories.map(cat => (
                 <SelectItem key={cat} value={cat} className="text-[10px] uppercase tracking-widest">
                   {cat === 'all' ? 'All Categories' : cat}
@@ -173,7 +173,7 @@ export default function WishlistPanel() {
         </div>
       </header>
 
-      <form onSubmit={handleAddItem} className="mb-16 bg-card/40 p-6 rounded-2xl border border-border/50 backdrop-blur-sm">
+      <form onSubmit={handleAddItem} className="mb-20 bg-card/40 p-6 rounded-2xl border border-border/50 backdrop-blur-sm relative z-10">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
             <div className="flex-1 w-full relative">
