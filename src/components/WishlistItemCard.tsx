@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { WishlistItem } from '@/components/WishlistPanel';
-import { ExternalLink, Trash2, Check, Pencil } from 'lucide-react';
+import { ExternalLink, Trash2, Check, Pencil, Heart, ShoppingBag } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface WishlistItemCardProps {
   item: WishlistItem;
@@ -17,25 +18,38 @@ export default function WishlistItemCard({ item, onToggle, onRemove, onEdit }: W
       <div className="flex items-center gap-6 flex-1">
         <button 
           onClick={onToggle}
-          className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 flex-shrink-0
-            ${item.purchased 
+          className={cn(
+            "w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 flex-shrink-0",
+            item.purchased 
               ? 'bg-primary border-primary text-primary-foreground' 
-              : 'border-border text-transparent hover:border-primary'}`}
+              : 'border-border text-transparent hover:border-primary'
+          )}
         >
           <Check size={12} strokeWidth={3} />
         </button>
         
         <div className="flex flex-col">
-          <span className={`text-lg font-light transition-all duration-300 ${item.purchased ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-            {item.name}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className={cn(
+              "text-lg font-light transition-all duration-300",
+              item.purchased ? 'text-muted-foreground line-through' : 'text-foreground'
+            )}>
+              {item.name}
+            </span>
+            {item.type && (
+              <span className="opacity-40" title={item.type === 'like' ? 'Thing I Like' : 'Thing I Need'}>
+                {item.type === 'like' ? <Heart size={14} /> : <ShoppingBag size={14} />}
+              </span>
+            )}
+          </div>
+          
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider bg-muted px-2 py-0.5 rounded-full">
+            <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-muted/50 px-2 py-0.5 rounded-md border border-border/50">
               {item.category}
             </span>
             {item.note && (
-              <span className="text-[10px] text-muted-foreground italic truncate max-w-[150px]">
-                "{item.note}"
+              <span className="text-[10px] text-muted-foreground italic truncate max-w-[200px]">
+                {item.note}
               </span>
             )}
           </div>
