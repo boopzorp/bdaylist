@@ -1,70 +1,68 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import UserSidebar from '@/components/UserSidebar';
 import WishlistPanel from '@/components/WishlistPanel';
 import LandingPage from '@/components/LandingPage';
 import ProfileSetupDialog from '@/components/ProfileSetupDialog';
 import { cn } from '@/lib/utils';
-import { useUser, useFirebase } from '@/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
-  const [theme, setTheme] = useState('theme-noir');
-  const [targetUserId, setTargetUserId] = useState<string | null>(null);
+  
+  // Instant theme from local storage if available
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('wishstream_theme') || 'theme-noir';
+    }
+    return 'theme-noir';
+  });
+
   const [isProfileCollapsed, setIsProfileCollapsed] = useState(false);
-  const [isFriendMode, setIsFriendMode] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
 
-  useEffect(() => {
+  // Determine target user ID from URL or auth
+  const targetUserId = useMemo(() => {
+    if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
-    const sharedUid = params.get('u');
-    
-    if (sharedUid) {
-      setTargetUserId(sharedUid);
-      setIsFriendMode(true);
-      fetchTargetUserTheme(sharedUid);
-    } else if (user) {
-      setTargetUserId(user.uid);
-      setIsFriendMode(false);
-      checkProfileStatus(user.uid);
-      const savedTheme = localStorage.getItem('wishstream_theme');
-      if (savedTheme) setTheme(savedTheme);
-    } else {
-      setTargetUserId(null);
-      setIsFriendMode(false);
-    }
+    return params.get('u') || (user?.uid ?? null);
   }, [user]);
 
-  const checkProfileStatus = async (uid: string) => {
-    if (!firestore) return;
-    const profileRef = doc(firestore, 'userProfiles', uid);
-    const profileSnap = await getDoc(profileRef);
-    if (!profileSnap.exists()) {
-      setShowSetup(true);
-    } else if (profileSnap.data().theme) {
-      setTheme(profileSnap.data().theme);
-    }
-  };
+  const isFriendMode = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return !!params.get('u') && params.get('u') !== user?.uid;
+  }, [user]);
 
-  const fetchTargetUserTheme = async (uid: string) => {
-    if (!firestore) return;
-    try {
-      const profileDoc = await getDoc(doc(firestore, 'userProfiles', uid));
-      if (profileDoc.exists() && profileDoc.data().theme) {
-        setTheme(profileDoc.data().theme);
+  // Reactive profile fetch
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !targetUserId) return null;
+    return doc(firestore, 'userProfiles', targetUserId);
+  }, [firestore, targetUserId]);
+
+  const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
+
+  // Sync theme and setup status when profile data arrives
+  useEffect(() => {
+    if (profile) {
+      if (profile.theme && profile.theme !== theme) {
+        setTheme(profile.theme);
+        localStorage.setItem('wishstream_theme', profile.theme);
       }
-    } catch (e) {
-      console.error("Error fetching target user theme:", e);
+      setShowSetup(false);
+    } else if (!isProfileLoading && user && user.uid === targetUserId) {
+      // Profile doesn't exist for the logged-in user
+      setShowSetup(true);
     }
-  };
+  }, [profile, isProfileLoading, user, targetUserId]);
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
     localStorage.setItem('wishstream_theme', newTheme);
-    if (user && firestore) {
+    if (user && firestore && user.uid === targetUserId) {
       setDoc(doc(firestore, 'userProfiles', user.uid), { theme: newTheme }, { merge: true });
     }
   };
@@ -73,13 +71,12 @@ export default function Home() {
     setIsProfileCollapsed(collapsed);
   };
 
-  const handleSetupComplete = async (data: { displayName: string; birthdate: string; quote: string }) => {
+  const handleSetupComplete = async (data: { displayName: string; birthdate: string; quote: string; avatarUrl: string }) => {
     if (!user || !firestore) return;
     const profileRef = doc(firestore, 'userProfiles', user.uid);
     await setDoc(profileRef, {
       id: user.uid,
       ...data,
-      avatarUrl: `https://picsum.photos/seed/${user.uid}/400/400`,
       theme: theme,
       createdAt: new Date().toISOString(),
     });
@@ -89,7 +86,7 @@ export default function Home() {
   if (isUserLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-t-2 border-primary rounded-full animate-spin" />
+        <div className="w-6 h-6 border-t-2 border-primary rounded-full animate-spin opacity-20" />
       </div>
     );
   }
