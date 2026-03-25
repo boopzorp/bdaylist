@@ -43,8 +43,11 @@ export default function Home() {
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
 
   useEffect(() => {
-    // Only evaluate setup dialog logic when profile loading has completed
-    if (isProfileLoading) return;
+    // If we're loading either the auth state or the profile data, wait.
+    if (isUserLoading || isProfileLoading) return;
+    
+    // If no user is logged in and we're not in friend mode, we're on landing page.
+    if (!user && !isFriendMode) return;
 
     if (profile) {
       if (profile.theme && profile.theme !== theme) {
@@ -53,10 +56,10 @@ export default function Home() {
       }
       setShowSetup(false);
     } else if (user && user.uid === targetUserId) {
-      // Profile explicitly doesn't exist and we are the owner
+      // Profile definitively doesn't exist after loading check, and we are the owner
       setShowSetup(true);
     }
-  }, [profile, isProfileLoading, user, targetUserId]);
+  }, [profile, isProfileLoading, user, isUserLoading, targetUserId, isFriendMode, theme]);
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
