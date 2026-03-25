@@ -60,7 +60,9 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, onAd
         </h1>
         
         <div className="flex flex-col items-center gap-4 mt-8 font-mono text-sm tracking-tight text-muted-foreground">
-          <span className="uppercase tracking-widest opacity-80">Oct 24</span>
+          <span className="uppercase tracking-widest bg-muted/50 px-5 py-1.5 rounded-full border border-border/40 opacity-80">
+            Oct 24
+          </span>
           <p className="max-w-[220px] text-center italic leading-relaxed opacity-70 px-4">
             "Minimalism is about focusing on what matters."
           </p>
