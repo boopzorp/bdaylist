@@ -6,10 +6,10 @@ service cloud.firestore {
      * WISHSTREAM SECURITY RULES
      * 
      * Architecture:
-     * - /userProfiles/{userId}: Profile info. Owner writes, everyone reads.
-     * - /userProfiles/{userId}/wishlistItems/{itemId}: The actual wishlist. Owner writes, everyone reads.
-     * - /sharedWishlistStatuses/{itemId}: Fulfillment tracking. Everyone reads/writes (to tick off items).
-     * - /userProfiles/{userId}/guests/list: Guestbook. Everyone reads/writes (to join stream).
+     * - /userProfiles/{userId}: Profile info.
+     * - /userProfiles/{userId}/wishlistItems/{itemId}: The actual wishlist.
+     * - /userProfiles/{userId}/guests/{docId}: Guestbook/Friends list.
+     * - /sharedWishlistStatuses/{itemId}: Fulfillment tracking.
      */
 
     // --- Helpers ---
@@ -23,33 +23,39 @@ service cloud.firestore {
 
     // --- Rules ---
 
-    // User Profiles: Everyone can see a profile, only owner can edit.
+    // User Profiles & Subcollections
     match /userProfiles/{userId} {
+      // Everyone signed in can view profiles (to see shared wishlists)
       allow read: if isSignedIn();
+      // Only the owner can manage their own profile
       allow write: if isOwner(userId);
 
-      // Wishlist Items: Everyone can see the items (to buy them!), only owner can manage the list.
+      // Wishlist Items
       match /wishlistItems/{itemId} {
         allow read: if isSignedIn();
         allow write: if isOwner(userId);
       }
 
-      // Guestbook: Anyone can see the guest list and add themselves to it.
-      match /guests/list {
+      // Guestbook/Friends subcollection
+      match /guests/{docId} {
         allow read: if isSignedIn();
+        // Friends can add themselves to the guest list
         allow write: if isSignedIn();
       }
     }
 
-    // Shared Statuses: This is where friends "tick off" items.
-    // It's a separate collection to keep the "secret" from the owner (Admin).
+    // Shared Statuses (Denormalized fulfillment tracking)
     match /sharedWishlistStatuses/{itemId} {
+      // Allow reading fulfillment status if signed in
       allow read: if isSignedIn();
-      // Friends write to this collection to fulfill items. 
-      // Admin also writes here if they manually mark something as purchased.
+      // Friends can "tick off" items (create/update fulfillment)
       allow create, update: if isSignedIn();
-      // Only the owner of the target item should be able to clear/delete the status.
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      // Only the owner of the target item can clear/delete the status
+      // We check the 'userId' field stored in the document
+      allow delete: if isSignedIn() && (
+        (resource != null && resource.data.userId == request.auth.uid) ||
+        (request.resource != null && request.resource.data.userId == request.auth.uid)
+      );
     }
 
     // Admin Roles (DBAC)

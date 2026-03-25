@@ -10,7 +10,7 @@ import { suggestWishlistItemDetails } from '@/ai/flows/suggest-wishlist-item-det
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useFirebase, useCollection, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, orderBy, getDocs, updateDoc, arrayUnion, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, query, orderBy, where, updateDoc, arrayUnion, setDoc, deleteDoc } from 'firebase/firestore';
 import { 
   Tabs, 
   TabsList, 
@@ -68,9 +68,13 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const { data: items } = useCollection<WishlistItem>(itemsRef);
 
+  // Optimized shared status query: filter by userId to match target stream
   const sharedRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
-    return collection(firestore, 'sharedWishlistStatuses');
+    return query(
+      collection(firestore, 'sharedWishlistStatuses'), 
+      where('userId', '==', targetUserId)
+    );
   }, [firestore, targetUserId]);
 
   const { data: sharedStatuses } = useCollection(sharedRef);
