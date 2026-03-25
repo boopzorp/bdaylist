@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile information within the WishStream application. This includes personal display details and references to user-specific data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity, typically sourced from an external authentication system."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The name the user chooses to display within the application."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL to the user's profile picture or avatar.",
+          "format": "uri"
+        },
+        "birthdate": {
+          "type": "string",
+          "description": "The user's birthdate.",
+          "format": "date"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user profile was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "displayName",
+        "createdAt"
+      ]
+    },
+    "WishlistItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WishlistItem",
+      "type": "object",
+      "description": "Represents a single item in a user's wishlist, including details, status, and related metadata.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the WishlistItem entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the UserProfile entity that owns this wishlist item. (Relationship: UserProfile 1:N WishlistItem)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name or title of the wishlist item."
+        },
+        "description": {
+          "type": "string",
+          "description": "An optional detailed description for the wishlist item, potentially enhanced by AI."
+        },
+        "url": {
+          "type": "string",
+          "description": "An optional external URL related to the wishlist item (e.g., a product page).",
+          "format": "uri"
+        },
+        "tags": {
+          "type": "array",
+          "description": "An array of AI-generated or user-defined tags for the item to aid in categorization.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tickedOff": {
+          "type": "boolean",
+          "description": "Indicates whether the wishlist item has been acquired or marked as fulfilled."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the wishlist item was added.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the wishlist item was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "tickedOff",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/userProfiles/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores individual user profiles. Read/write access is strictly restricted to the owner (`userId`). Other authenticated users can read basic non-sensitive fields like `id` and `avatarUrl` (for a 'guestbook' view), but sensitive fields such as `displayName` and `birthdate` remain private to the owner. This ensures Authorization Independence as owner checks are path-based (`request.auth.uid == userId`).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this profile."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/userProfiles/{userId}/wishlistItems/{wishlistItemId}",
+        "definition": {
+          "entityName": "WishlistItem",
+          "schema": {
+            "$ref": "#/backend/entities/WishlistItem"
+          },
+          "description": "Stores a user's private wishlist items. Full CRUD access is restricted to the item's `userId`. Each item includes the `userId` field for Authorization Independence. It must also include boolean fields `shareDisplayNameWithFriends` and `shareItemDetailsWithFriends` to control what data is denormalized and made visible in the `/sharedWishlistStatuses` collection for 'Friends Mode'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this wishlist item."
+            },
+            {
+              "name": "wishlistItemId",
+              "description": "The unique identifier of the wishlist item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/sharedWishlistStatuses/{wishlistItemId}",
+        "definition": {
+          "entityName": "WishlistItem",
+          "schema": {
+            "$ref": "#/backend/entities/WishlistItem"
+          },
+          "description": "A denormalized collection containing public-facing status of wishlist items. Documents in this collection are created/updated whenever a private `WishlistItem` is 'tickedOff' and the user opts to share certain details. It represents a derived view of a `WishlistItem`, including denormalized `userId` (ownerId), `tickedOff` status, `sharedDisplayName` (boolean), `sharedItemDetails` (boolean), and optionally the actual `displayName` and `itemName` if permitted by the user. This structure supports QAPs by allowing friends to efficiently query for 'tickedOff' items without filtering, while maintaining Authorization Independence as all access control logic (who owns, what is shared) is present directly on the document, eliminating `get()` calls in rules. Read access is permitted for any authenticated user, with field-level rules controlling visibility of `displayName` and `itemName` based on sharing flags. Write access is restricted to the `userId` that owns the corresponding private `WishlistItem`.",
+          "params": [
+            {
+              "name": "wishlistItemId",
+              "description": "The unique identifier of the shared wishlist item, matching its source `WishlistItem` ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "A collection for Database Access Control (DBAC). The existence of a document in this collection (where `userId` is the document ID) grants administrative privileges. This collection itself will typically contain minimal or empty documents; its purpose is purely for existence checks in security rules. Read access is restricted to authenticated users to check for admin status. This leverages Authorization Independence via existence checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user with administrative privileges."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure for WishStream is designed around core principles of Authorization Independence, Structural Segregation, and clear Access Modeling to ensure security, scalability, and debuggability. \n\n**Authorization Independence:**\n*   For user-specific data in `/userProfiles/{userId}` and `/userProfiles/{userId}/wishlistItems/{wishlistItemId}`, ownership is explicitly defined by the path parameter `{userId}` which matches `request.auth.uid`. Additionally, each `WishlistItem` document contains an explicit `userId` field, reinforcing ownership without needing to fetch parent documents. \n*   The most critical aspect of Authorization Independence is applied to shared data. The `/sharedWishlistStatuses/{wishlistItemId}` collection is a denormalized view. Each document in this collection includes all necessary authorization context: `userId` (owner), `tickedOff` status, `sharedDisplayName`, and `sharedItemDetails`. This design eliminates the need for `get()` operations in security rules to check parent documents or other collections when authorizing read/write access or field-level visibility for shared items. All authorization decisions are made directly from the data present in the document itself, greatly simplifying rule logic and improving performance and atomicity.\n\n**QAPs (Rules are not Filters):**\n*   For private user data, `list` operations on `/userProfiles/{userId}/wishlistItems` are inherently scoped by the authenticated user's ID, aligning with QAPs. \n*   For 'Friends Mode' and the ability to view shared 'ticked off' items, the `/sharedWishlistStatuses/{wishlistItemId}` collection is crucial. This collection allows any authenticated user to perform efficient `list` queries (e.g., `where('tickedOff', '==', true)`). Firestore security rules can then enforce granular, field-level access control based on the `sharedDisplayName` and `sharedItemDetails` flags present in *each document*. This means the query fetches all relevant documents, and the rules selectively reveal or hide specific fields, rather than acting as a filter that might cause rule evaluation failures on partial indices or complex `get()` operations. This ensures that only authorized data is returned, while supporting efficient data retrieval.\n\n**Structural Segregation:**\n*   Private user profiles and their wishlist items (`/userProfiles/{userId}` and `/userProfiles/{userId}/wishlistItems/{wishlistItemId}`) are kept separate from the globally accessible, but permission-controlled, shared wishlist status (`/sharedWishlistStatuses/{wishlistItemId}`). This segregation ensures that different security postures (private vs. conditionally public) do not conflict within the same collection, simplifying security rules and data management.\n\n**Access Modeling & DBAC:**\n*   Path-based ownership is consistently used for private user data (`/userProfiles/{userId}`).\n*   Collaborative/shared data leverages denormalization with explicit sharing flags on the `WishlistItem` and its derived `SharedWishlistItemStatus` representation.\n*   Global roles for admin access are implemented using a simple existence-based check via the `/roles_admin/{userId}` collection (DBAC), ensuring robust and debuggable role management."
+  }
+}
