@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -14,15 +15,32 @@ export default function Home() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('wishstream_theme') || 'theme-noir';
-    }
-    return 'theme-noir';
-  });
-
+  // Initialize with static defaults to prevent hydration mismatch
+  const [theme, setTheme] = useState('theme-noir');
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
+  const [isFriendMode, setIsFriendMode] = useState(false);
   const [isProfileCollapsed, setIsProfileCollapsed] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  // Handle hydration and read browser-only state
+  useEffect(() => {
+    setHasHydrated(true);
+    
+    // Read theme
+    const savedTheme = localStorage.getItem('wishstream_theme');
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+
+    // Read URL params
+    const params = new URLSearchParams(window.location.search);
+    const uParam = params.get('u');
+    const effectiveUserId = uParam || (user?.uid ?? null);
+    
+    setTargetUserId(effectiveUserId);
+    setIsFriendMode(!!uParam && uParam !== user?.uid);
+  }, [user]);
 
   // Sync theme class to body so Portals (Dialogs) pick up variables
   useEffect(() => {
@@ -34,19 +52,6 @@ export default function Home() {
     }
   }, [theme]);
 
-  const targetUserId = useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    const params = new URLSearchParams(window.location.search);
-    return params.get('u') || (user?.uid ?? null);
-  }, [user]);
-
-  const isFriendMode = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    const params = new URLSearchParams(window.location.search);
-    const uParam = params.get('u');
-    return !!uParam && uParam !== user?.uid;
-  }, [user]);
-
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
     return doc(firestore, 'userProfiles', targetUserId);
@@ -55,7 +60,7 @@ export default function Home() {
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
 
   useEffect(() => {
-    if (isUserLoading || isProfileLoading) return;
+    if (isUserLoading || isProfileLoading || !hasHydrated) return;
     if (!user && !isFriendMode) return;
 
     if (profile) {
@@ -67,7 +72,7 @@ export default function Home() {
     } else if (user && user.uid === targetUserId && !isProfileLoading) {
       setShowSetup(true);
     }
-  }, [profile, isProfileLoading, user, isUserLoading, targetUserId, isFriendMode, theme]);
+  }, [profile, isProfileLoading, user, isUserLoading, targetUserId, isFriendMode, theme, hasHydrated]);
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
@@ -93,7 +98,8 @@ export default function Home() {
     setShowSetup(false);
   };
 
-  const isGlobalLoading = isUserLoading || (!!targetUserId && isProfileLoading);
+  // Wait for hydration to avoid mismatch on browser-specific logic
+  const isGlobalLoading = !hasHydrated || isUserLoading || (!!targetUserId && isProfileLoading);
 
   if (isGlobalLoading) {
     return (
@@ -114,7 +120,7 @@ export default function Home() {
             Bdday<span className="font-normal italic">List</span>
           </h2>
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-mono">
-            {isUserLoading ? "Identifying Stream..." : "Fetching Desires..."}
+            {!hasHydrated ? "Connecting..." : isUserLoading ? "Identifying Stream..." : "Fetching Desires..."}
           </p>
         </div>
       </div>
