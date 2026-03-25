@@ -13,7 +13,6 @@ export default function Home() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
   
-  // Instant theme from local storage if available
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('wishstream_theme') || 'theme-noir';
@@ -24,7 +23,6 @@ export default function Home() {
   const [isProfileCollapsed, setIsProfileCollapsed] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
 
-  // Determine target user ID from URL or auth
   const targetUserId = useMemo(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -37,7 +35,6 @@ export default function Home() {
     return !!params.get('u') && params.get('u') !== user?.uid;
   }, [user]);
 
-  // Reactive profile fetch
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
     return doc(firestore, 'userProfiles', targetUserId);
@@ -45,16 +42,18 @@ export default function Home() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
 
-  // Sync theme and setup status when profile data arrives
   useEffect(() => {
+    // Only evaluate setup dialog logic when profile loading has completed
+    if (isProfileLoading) return;
+
     if (profile) {
       if (profile.theme && profile.theme !== theme) {
         setTheme(profile.theme);
         localStorage.setItem('wishstream_theme', profile.theme);
       }
       setShowSetup(false);
-    } else if (!isProfileLoading && user && user.uid === targetUserId) {
-      // Profile doesn't exist for the logged-in user
+    } else if (user && user.uid === targetUserId) {
+      // Profile explicitly doesn't exist and we are the owner
       setShowSetup(true);
     }
   }, [profile, isProfileLoading, user, targetUserId]);
@@ -97,7 +96,6 @@ export default function Home() {
 
   return (
     <div className={cn("flex flex-col md:flex-row min-h-screen bg-background transition-colors duration-500", theme)}>
-      {/* Sidebar: Profile & Controls */}
       {!isProfileCollapsed && (
         <div className={cn(
           "w-full md:w-[35%] lg:w-[30%] border-b md:border-b-0 md:border-r border-border md:sticky md:top-0 md:h-screen shrink-0 transition-all duration-500",
@@ -112,7 +110,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Main Content: Wishlist */}
       <main className="flex-1 bg-card min-h-screen">
         <WishlistPanel 
           isAdmin={!isFriendMode} 
