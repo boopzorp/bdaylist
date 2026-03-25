@@ -33,7 +33,11 @@ export interface WishlistItem {
   createdAt: number;
 }
 
-export default function WishlistPanel() {
+interface WishlistPanelProps {
+  isAdmin: boolean;
+}
+
+export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [newItemName, setNewItemName] = useState('');
   const [newCategory, setNewCategory] = useState('');
@@ -116,6 +120,7 @@ export default function WishlistPanel() {
   };
 
   const togglePurchased = (id: string) => {
+    if (!isAdmin) return;
     setItems(prev => prev.map(item => 
       item.id === id ? { ...item, purchased: !item.purchased } : item
     ));
@@ -173,75 +178,77 @@ export default function WishlistPanel() {
         </div>
       </header>
 
-      <form onSubmit={handleAddItem} className="mb-20 bg-card/40 p-6 rounded-2xl border border-border/50 backdrop-blur-sm relative z-10">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
-            <div className="flex-1 w-full relative">
-              <input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="What are you desiring?"
-                className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
-              />
+      {isAdmin && (
+        <form onSubmit={handleAddItem} className="mb-20 bg-card/40 p-6 rounded-2xl border border-border/50 backdrop-blur-sm relative z-10">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
+              <div className="flex-1 w-full relative">
+                <input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="What are you desiring?"
+                  className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div className="w-full sm:w-1/3 relative">
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="Category"
+                  className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+                />
+                <button 
+                  type="button"
+                  onClick={handleEnhance}
+                  disabled={isEnhancing || !newItemName.trim()}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors"
+                >
+                  {isEnhancing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-            <div className="w-full sm:w-1/3 relative">
-              <input
-                type="text"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="Category"
-                className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
-              />
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNewType('like')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest border transition-all duration-300",
+                    newType === 'like' 
+                      ? "bg-primary text-primary-foreground border-primary" 
+                      : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
+                  )}
+                >
+                  Thing I Like
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewType('need')}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest border transition-all duration-300",
+                    newType === 'need' 
+                      ? "bg-primary text-primary-foreground border-primary" 
+                      : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
+                  )}
+                >
+                  Thing I Need
+                </button>
+              </div>
+
               <button 
-                type="button"
-                onClick={handleEnhance}
-                disabled={isEnhancing || !newItemName.trim()}
-                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors"
+                type="submit"
+                disabled={!newItemName.trim()}
+                className="flex items-center justify-center h-10 w-10 rounded-full border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-30 group shrink-0"
               >
-                {isEnhancing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                <Plus size={18} className="transition-transform group-hover:rotate-90 duration-300" />
               </button>
             </div>
           </div>
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setNewType('like')}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest border transition-all duration-300",
-                  newType === 'like' 
-                    ? "bg-primary text-primary-foreground border-primary" 
-                    : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
-                )}
-              >
-                Thing I Like
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewType('need')}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-[10px] uppercase tracking-widest border transition-all duration-300",
-                  newType === 'need' 
-                    ? "bg-primary text-primary-foreground border-primary" 
-                    : "bg-transparent text-muted-foreground border-border hover:border-muted-foreground"
-                )}
-              >
-                Thing I Need
-              </button>
-            </div>
-
-            <button 
-              type="submit"
-              disabled={!newItemName.trim()}
-              className="flex items-center justify-center h-10 w-10 rounded-full border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-30 group shrink-0"
-            >
-              <Plus size={18} className="transition-transform group-hover:rotate-90 duration-300" />
-            </button>
-          </div>
-        </div>
-      </form>
+        </form>
+      )}
 
       <div className="space-y-2">
         {filteredItems.length > 0 ? (
@@ -249,6 +256,7 @@ export default function WishlistPanel() {
             <WishlistItemCard 
               key={item.id} 
               item={item} 
+              isAdmin={isAdmin}
               onToggle={() => togglePurchased(item.id)}
               onRemove={() => removeItem(item.id)} 
               onEdit={() => setEditingItem(item)}

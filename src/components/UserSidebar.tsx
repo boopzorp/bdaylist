@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, MapPin, Cake, Gift, PartyPopper } from 'lucide-react';
+import { Calendar, Quote, Cake, Gift, PartyPopper, UserCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface UserSidebarProps {
   currentTheme: string;
   onThemeChange: (theme: string) => void;
+  isAdmin: boolean;
+  onAdminToggle: () => void;
 }
 
-export default function UserSidebar({ currentTheme, onThemeChange }: UserSidebarProps) {
+export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, onAdminToggle }: UserSidebarProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -22,6 +25,8 @@ export default function UserSidebar({ currentTheme, onThemeChange }: UserSidebar
     { id: 'theme-noir', color: 'bg-neutral-900', label: 'Noir' },
     { id: 'theme-birthday', color: 'bg-pink-400', label: 'Birthday' },
     { id: 'theme-mint', color: 'bg-emerald-400', label: 'Mint' },
+    { id: 'theme-sunset', color: 'bg-orange-400', label: 'Sunset' },
+    { id: 'theme-lavender', color: 'bg-purple-400', label: 'Lavender' },
   ];
 
   return (
@@ -57,11 +62,11 @@ export default function UserSidebar({ currentTheme, onThemeChange }: UserSidebar
         <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground font-mono tracking-tight mt-6">
           <div className="flex items-center gap-2 bg-card/60 px-4 py-1.5 rounded-full border border-border shadow-sm backdrop-blur-sm">
             <Calendar size={14} className="text-primary" />
-            <span>Oct 24, 1996</span>
+            <span>Oct 24</span>
           </div>
-          <div className="flex items-center gap-2 bg-card/60 px-4 py-1.5 rounded-full border border-border shadow-sm backdrop-blur-sm">
-            <MapPin size={14} className="text-primary" />
-            <span>Copenhagen, DK</span>
+          <div className="flex items-center gap-2 bg-card/60 px-4 py-1.5 rounded-full border border-border shadow-sm backdrop-blur-sm max-w-[240px] text-center">
+            <Quote size={14} className="text-primary shrink-0" />
+            <span className="italic">"Minimalism is about focusing on what matters."</span>
           </div>
         </div>
 
@@ -81,10 +86,20 @@ export default function UserSidebar({ currentTheme, onThemeChange }: UserSidebar
           ))}
         </div>
 
-        <div className="mt-8 text-center">
-           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] leading-relaxed max-w-[200px]">
-             Curated desires & thoughtful acquisitions.
-           </p>
+        {/* Admin Toggle */}
+        <div className="mt-12">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onAdminToggle}
+            className="rounded-full text-[10px] uppercase tracking-widest h-8 px-4 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all"
+          >
+            {isAdmin ? (
+              <><UserCircle size={14} className="mr-2" /> Admin View</>
+            ) : (
+              <><Eye size={14} className="mr-2" /> Consumer View</>
+            )}
+          </Button>
         </div>
       </div>
     </aside>

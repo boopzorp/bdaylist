@@ -43,9 +43,9 @@ export default function EditItemDialog({ item, open, onOpenChange, onUpdate }: E
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] rounded-2xl border-none shadow-2xl overflow-hidden">
+      <DialogContent className="sm:max-w-[425px] rounded-2xl border-none shadow-2xl overflow-hidden bg-card text-card-foreground">
         <div className="bg-primary/5 p-6 border-b border-border/50">
-          <DialogTitle className="text-2xl font-light tracking-tight">Edit Wish</DialogTitle>
+          <DialogTitle className="text-2xl font-light tracking-tight text-foreground">Edit Wish</DialogTitle>
         </div>
         
         <div className="grid gap-6 p-6">

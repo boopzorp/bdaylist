@@ -1,28 +1,41 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { WishlistItem } from '@/components/WishlistPanel';
 import { ExternalLink, Trash2, Check, Pencil, Heart, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface WishlistItemCardProps {
   item: WishlistItem;
+  isAdmin: boolean;
   onToggle: () => void;
   onRemove: () => void;
   onEdit: () => void;
 }
 
-export default function WishlistItemCard({ item, onToggle, onRemove, onEdit }: WishlistItemCardProps) {
+export default function WishlistItemCard({ item, isAdmin, onToggle, onRemove, onEdit }: WishlistItemCardProps) {
+  const [isTicking, setIsTicking] = useState(false);
+
+  const handleToggle = () => {
+    if (!isAdmin) return;
+    setIsTicking(true);
+    onToggle();
+    setTimeout(() => setIsTicking(false), 400);
+  };
+
   return (
     <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-6 border-b border-border hover:border-primary/30 transition-colors">
       <div className="flex items-center gap-6 flex-1">
         <button 
-          onClick={onToggle}
+          onClick={handleToggle}
+          disabled={!isAdmin}
           className={cn(
             "w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 flex-shrink-0",
             item.purchased 
               ? 'bg-primary border-primary text-primary-foreground' 
-              : 'border-border text-transparent hover:border-primary'
+              : 'border-border text-transparent hover:border-primary',
+            isTicking && 'animate-tick-pop',
+            !isAdmin && 'cursor-default opacity-80'
           )}
         >
           <Check size={12} strokeWidth={3} />
@@ -68,20 +81,24 @@ export default function WishlistItemCard({ item, onToggle, onRemove, onEdit }: W
             <ExternalLink size={16} />
           </a>
         )}
-        <button 
-          onClick={onEdit}
-          className="p-2 text-muted-foreground hover:text-primary transition-colors"
-          title="Edit item"
-        >
-          <Pencil size={16} />
-        </button>
-        <button 
-          onClick={onRemove}
-          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-          title="Delete item"
-        >
-          <Trash2 size={16} />
-        </button>
+        {isAdmin && (
+          <>
+            <button 
+              onClick={onEdit}
+              className="p-2 text-muted-foreground hover:text-primary transition-colors"
+              title="Edit item"
+            >
+              <Pencil size={16} />
+            </button>
+            <button 
+              onClick={onRemove}
+              className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+              title="Delete item"
+            >
+              <Trash2 size={16} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
