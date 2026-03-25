@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Sparkles, Loader2 } from 'lucide-react';
 import WishlistItemCard from '@/components/WishlistItemCard';
+import EditItemDialog from '@/components/EditItemDialog';
 import { suggestWishlistItemDetails } from '@/ai/flows/suggest-wishlist-item-details';
 import { toast } from '@/hooks/use-toast';
 
@@ -11,27 +12,28 @@ export interface WishlistItem {
   name: string;
   category: string;
   url?: string;
+  note?: string;
   purchased: boolean;
   createdAt: number;
 }
 
 export default function WishlistPanel() {
   const [items, setItems] = useState<WishlistItem[]>([]);
-  const [newItem, setNewItem] = useState('');
+  const [newItemName, setNewItemName] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('wishstream_items_refined');
+    const saved = localStorage.getItem('wishstream_items_v2');
     if (saved) {
       setItems(JSON.parse(saved));
     } else {
-      // Default items if empty
       setItems([
-        { id: '1', name: 'Leica M11 Monochrom', url: '#', purchased: false, category: 'Photography', createdAt: Date.now() - 1000000 },
-        { id: '2', name: 'Vitra Eames Lounge Chair', url: '#', purchased: false, category: 'Furniture', createdAt: Date.now() - 2000000 },
-        { id: '3', name: 'Kyoto Autumn Trip', url: '#', purchased: true, category: 'Travel', createdAt: Date.now() - 3000000 },
+        { id: '1', name: 'Leica M11 Monochrom', url: 'https://leica-camera.com', purchased: false, category: 'Photography', createdAt: Date.now() - 1000000 },
+        { id: '2', name: 'Vitra Eames Lounge Chair', url: 'https://vitra.com', purchased: false, category: 'Furniture', createdAt: Date.now() - 2000000 },
+        { id: '3', name: 'Kyoto Autumn Trip', url: '', purchased: true, category: 'Travel', createdAt: Date.now() - 3000000 },
       ]);
     }
     setMounted(true);
@@ -39,53 +41,40 @@ export default function WishlistPanel() {
 
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem('wishstream_items_refined', JSON.stringify(items));
+      localStorage.setItem('wishstream_items_v2', JSON.stringify(items));
     }
   }, [items, mounted]);
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItem.trim()) return;
+    if (!newItemName.trim()) return;
     
     const item: WishlistItem = {
       id: Math.random().toString(36).substr(2, 9),
-      name: newItem,
-      url: '#',
+      name: newItemName,
+      url: '',
+      note: '',
       purchased: false,
       category: newCategory.trim() || 'Misc',
       createdAt: Date.now(),
     };
     
     setItems(prev => [item, ...prev]);
-    setNewItem('');
+    setNewItemName('');
     setNewCategory('');
   };
 
   const handleEnhance = async () => {
-    if (!newItem.trim()) {
-      toast({
-        title: "Missing Info",
-        description: "Please enter an item name to enhance.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    if (!newItemName.trim()) return;
     setIsEnhancing(true);
     try {
-      const result = await suggestWishlistItemDetails({
-        title: newItem,
-      });
-
+      const result = await suggestWishlistItemDetails({ title: newItemName });
       if (result && result.suggestedTags.length > 0) {
         setNewCategory(result.suggestedTags[0]);
-        toast({
-          title: "AI Suggestion",
-          description: `Suggested category: ${result.suggestedTags[0]}`
-        });
+        toast({ title: "AI Suggestion", description: `Suggested category: ${result.suggestedTags[0]}` });
       }
     } catch (error) {
-      console.error("Enhancement failed:", error);
+      console.error(error);
     } finally {
       setIsEnhancing(false);
     }
@@ -101,27 +90,31 @@ export default function WishlistPanel() {
     setItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const updateItem = (updatedItem: WishlistItem) => {
+    setItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+    setEditingItem(null);
+  };
+
   if (!mounted) return null;
 
   return (
     <div className="max-w-3xl mx-auto p-8 lg:p-16 xl:p-24">
       <header className="mb-16">
-        <h2 className="text-4xl lg:text-5xl font-extralight tracking-tighter text-neutral-900">
+        <h2 className="text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
           Wishlist.
         </h2>
-        <div className="w-12 h-[1px] bg-neutral-900 mt-6" />
+        <div className="w-12 h-[1px] bg-primary mt-6" />
       </header>
 
-      {/* Add Item Form */}
       <form onSubmit={handleAddItem} className="mb-16 relative group">
         <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
           <div className="flex-1 w-full relative">
             <input
               type="text"
-              value={newItem}
-              onChange={(e) => setNewItem(e.target.value)}
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
               placeholder="What are you desiring?"
-              className="w-full bg-transparent border-b border-neutral-200 py-3 text-lg font-light placeholder:text-neutral-300 focus:outline-none focus:border-neutral-900 transition-colors"
+              className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
           </div>
           <div className="w-full sm:w-1/3 relative">
@@ -130,29 +123,27 @@ export default function WishlistPanel() {
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
               placeholder="Category"
-              className="w-full bg-transparent border-b border-neutral-200 py-3 text-lg font-light placeholder:text-neutral-300 focus:outline-none focus:border-neutral-900 transition-colors"
+              className="w-full bg-transparent border-b border-border py-3 text-lg font-light placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
             <button 
               type="button"
               onClick={handleEnhance}
-              disabled={isEnhancing || !newItem.trim()}
-              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-neutral-300 hover:text-neutral-900 disabled:opacity-30 transition-colors"
-              title="AI Suggest Category"
+              disabled={isEnhancing || !newItemName.trim()}
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors"
             >
               {isEnhancing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             </button>
           </div>
           <button 
             type="submit"
-            disabled={!newItem.trim()}
-            className="flex items-center justify-center h-12 w-12 rounded-full border border-neutral-900 text-neutral-900 hover:bg-neutral-900 hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-900 group shrink-0"
+            disabled={!newItemName.trim()}
+            className="flex items-center justify-center h-12 w-12 rounded-full border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all disabled:opacity-30 group shrink-0"
           >
             <Plus size={20} className="transition-transform group-hover:rotate-90 duration-300" />
           </button>
         </div>
       </form>
 
-      {/* List */}
       <div className="space-y-2">
         {items.length > 0 ? (
           items.map((item) => (
@@ -161,18 +152,28 @@ export default function WishlistPanel() {
               item={item} 
               onToggle={() => togglePurchased(item.id)}
               onRemove={() => removeItem(item.id)} 
+              onEdit={() => setEditingItem(item)}
             />
           ))
         ) : (
-          <div className="py-24 text-center text-neutral-400 font-light">
+          <div className="py-24 text-center text-muted-foreground font-light">
             Your wishlist is currently empty.
           </div>
         )}
       </div>
 
-      <footer className="mt-32 pt-8 text-xs font-mono text-neutral-300 uppercase tracking-widest text-center border-t border-neutral-100">
+      <footer className="mt-32 pt-8 text-xs font-mono text-muted-foreground uppercase tracking-widest text-center border-t border-border">
         {items.filter(i => i.purchased).length} / {items.length} Fulfilled
       </footer>
+
+      {editingItem && (
+        <EditItemDialog 
+          item={editingItem} 
+          open={!!editingItem} 
+          onOpenChange={(open) => !open && setEditingItem(null)} 
+          onUpdate={updateItem}
+        />
+      )}
     </div>
   );
 }
