@@ -3,111 +3,59 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * WISHSTREAM SECURITY ARCHITECTURE
+     * WISHSTREAM SECURITY RULES
      * 
-     * Core Philosophy:
-     * This ruleset implements a hybrid security model designed for a social wishlist application. 
-     * It prioritizes strict data ownership for private lists while enabling conditional public 
-     * visibility for shared "ticked off" items and a global "guestbook" view.
-     * 
-     * Data Structure:
-     * - /userProfiles/{userId}: Private user profiles with limited public fields for guestbook discovery.
-     * - /userProfiles/{userId}/wishlistItems/{itemId}: Private, owner-only wishlist management.
-     * - /sharedWishlistStatuses/{itemId}: A denormalized, public-read collection for social interactions.
-     * - /roles_admin/{userId}: A role-based access control (RBAC) collection for administrative flags.
-     * 
-     * Key Security Decisions:
-     * 1. Path-Based Ownership: Private data is secured by matching the {userId} path parameter 
-     *    directly to the request.auth.uid, ensuring high-performance authorization.
-     * 2. Denormalization for Authorization: The `sharedWishlistStatuses` collection stores the 
-     *    owner's ID and sharing preferences (e.g., `sharedDisplayName`) directly on the document. 
-     *    This allows the rules to authorize access without performing expensive cross-collection gets.
-     * 3. Structural Segregation: Private wishlist data is physically separated from shared status updates 
-     *    to prevent accidental data leaks and simplify query logic.
-     * 4. Prototyping Flexibility: While authorization (WHO can access) is strictly enforced, 
-     *    data schema (WHAT the data looks like) is kept flexible to allow for rapid UI iteration.
+     * Architecture:
+     * - /userProfiles/{userId}: Profile info. Owner writes, everyone reads.
+     * - /userProfiles/{userId}/wishlistItems/{itemId}: The actual wishlist. Owner writes, everyone reads.
+     * - /sharedWishlistStatuses/{itemId}: Fulfillment tracking. Everyone reads/writes (to tick off items).
+     * - /userProfiles/{userId}/guests/list: Guestbook. Everyone reads/writes (to join stream).
      */
 
-    // --- Helper Functions ---
-
-    /** @description Checks if the user is authenticated. */
+    // --- Helpers ---
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** @description Checks if the authenticated user matches the provided ID. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /** @description Checks if the user is an owner and the document exists (for updates/deletes). */
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
+    // --- Rules ---
 
-    // The 'isAdmin' function was unused and contained an invalid 'exists' call
-    // with an invalid 'request' reference within its dynamic path construction.
-    // As it was unused, it has been removed to resolve these issues.
-
-    // --- Collection Rules ---
-
-    /**
-     * @description Rules for the UserProfile collection. Allows owners full access and other users limited read access for guestbook functionality.
-     * @path /userProfiles/{userId}
-     * @allow get (read) if signed in.
-     * @deny update (write) if request.auth.uid != userId.
-     * @principle Path-based ownership for writes; public discovery for reads.
-     */
+    // User Profiles: Everyone can see a profile, only owner can edit.
     match /userProfiles/{userId} {
-      allow get, list: if isSignedIn();
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
 
-      /**
-       * @description Rules for private wishlist items nested under a user profile.
-       * @path /userProfiles/{userId}/wishlistItems/{wishlistItemId}
-       * @allow create (write) if userId in path matches auth.uid AND data.userId matches auth.uid.
-       * @deny list (read) if a user attempts to view another user's private wishlist.
-       * @principle Strict structural segregation of private user data.
-       */
-      match /wishlistItems/{wishlistItemId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-        allow delete: if isExistingOwner(userId);
+      // Wishlist Items: Everyone can see the items (to buy them!), only owner can manage the list.
+      match /wishlistItems/{itemId} {
+        allow read: if isSignedIn();
+        allow write: if isOwner(userId);
+      }
+
+      // Guestbook: Anyone can see the guest list and add themselves to it.
+      match /guests/list {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn();
       }
     }
 
-    /**
-     * @description Rules for the shared status collection. This allows friends to see ticked-off items.
-     * @path /sharedWishlistStatuses/{wishlistItemId}
-     * @allow list (read) for any signed-in user to see "Friends Mode" updates.
-     * @deny create (write) if the userId in the document does not match the authenticated sender.
-     * @principle Denormalized ownerId for performant shared-access authorization.
-     */
-    match /sharedWishlistStatuses/{wishlistItemId} {
-      allow get, list: if isSignedIn();
-      // Only the owner of the item can create or modify the shared status
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isExistingOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(resource.data.userId);
+    // Shared Statuses: This is where friends "tick off" items.
+    // It's a separate collection to keep the "secret" from the owner (Admin).
+    match /sharedWishlistStatuses/{itemId} {
+      allow read: if isSignedIn();
+      // Friends write to this collection to fulfill items. 
+      // Admin also writes here if they manually mark something as purchased.
+      allow create, update: if isSignedIn();
+      // Only the owner of the target item should be able to clear/delete the status.
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
-    /**
-     * @description Database Access Control (DBAC) for administrative roles.
-     * @path /roles_admin/{userId}
-     * @allow get (read) to check for admin status existence.
-     * @deny write (all) to prevent users from escalating their own privileges.
-     * @principle Administrative roles are managed via backend/console, not client-side.
-     */
+    // Admin Roles (DBAC)
     match /roles_admin/{userId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if false; 
+      allow read: if isSignedIn();
+      allow write: if false; // Managed via console
     }
   }
 }
-// Note: In "Friends Mode", the application logic should check the `sharedDisplayName` 
-// and `sharedItemDetails` fields within the `sharedWishlistStatuses` documents 
-// to decide whether to display the `displayName` or `itemName` in the UI. 
-// Rules here ensure only the owner can write this data.
