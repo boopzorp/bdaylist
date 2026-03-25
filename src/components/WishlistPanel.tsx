@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Sparkles, Loader2, Filter, Heart, ShoppingBag, PartyPopper } from 'lucide-react';
 import WishlistItemCard from '@/components/WishlistItemCard';
 import EditItemDialog from '@/components/EditItemDialog';
@@ -50,6 +50,8 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'like' | 'need'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const saved = localStorage.getItem('wishstream_items_v3');
     if (saved) {
@@ -66,7 +68,7 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
     const handleScroll = () => {
       // Threshold for mobile scroll detection (sidebar height roughly)
       if (window.innerWidth < 768) {
-        setShowFloatingDate(window.scrollY > 300);
+        setShowFloatingDate(window.scrollY > 450);
       } else {
         setShowFloatingDate(false);
       }
@@ -147,17 +149,22 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
     setEditingItem(null);
   };
 
+  const scrollToProfile = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (!mounted) return null;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 xl:p-24">
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
+    <div ref={containerRef} className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 xl:p-24">
+      {/* Header section is sticky on mobile after sidebar scrolls away */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md -mx-6 px-6 py-4 mb-8 md:mb-12 md:relative md:bg-transparent md:backdrop-blur-none md:p-0 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
         <div className="flex items-center justify-between w-full md:w-auto">
           <div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-tighter text-foreground">
               Wishlist.
             </h2>
-            <div className="w-10 md:w-12 h-[1px] bg-primary mt-4 md:mt-6" />
+            <div className="w-10 md:w-12 h-[1px] bg-primary mt-2 md:mt-6 hidden md:block" />
           </div>
 
           {/* Sticky Mobile Date Pill */}
@@ -170,8 +177,8 @@ export default function WishlistPanel({ isAdmin }: WishlistPanelProps) {
                 <PartyPopper size={12} />
               </div>
               <button 
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="bg-muted/80 backdrop-blur-md px-4 py-1.5 rounded-full border border-border/40 shadow-sm animate-pulse-ring flex items-center gap-2"
+                onClick={scrollToProfile}
+                className="bg-card px-4 py-1.5 rounded-full border border-border shadow-sm animate-pulse-ring flex items-center gap-2"
               >
                 <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground whitespace-nowrap">
                   Oct 24
