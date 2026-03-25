@@ -66,14 +66,14 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     return query(collection(firestore, 'userProfiles', targetUserId, 'wishlistItems'), orderBy('createdAt', 'desc'));
   }, [firestore, targetUserId]);
 
-  const { data: items = [] } = useCollection<WishlistItem>(itemsRef);
+  const { data: items } = useCollection<WishlistItem>(itemsRef);
 
   const sharedRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId) return null;
     return collection(firestore, 'sharedWishlistStatuses');
   }, [firestore, targetUserId]);
 
-  const { data: sharedStatuses = [] } = useCollection(sharedRef);
+  const { data: sharedStatuses } = useCollection(sharedRef);
 
   useEffect(() => {
     if (!isAdmin && targetUserId) {
@@ -93,16 +93,18 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isAdmin, targetUserId, isProfileCollapsed, onToggleProfile]);
 
   const categories = useMemo(() => {
-    const cats = Array.from(new Set(items.map(item => item.category)));
+    if (!items) return ['all'];
+    const cats = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
     return ['all', ...cats.sort()];
   }, [items]);
 
   const filteredItems = useMemo(() => {
+    if (!items) return [];
     return items.filter(item => {
       const matchesTab = activeTab === 'all' || item.type === activeTab;
       const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
@@ -151,7 +153,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   const togglePurchased = async (id: string) => {
     if (!firestore || !targetUserId) return;
     
-    const item = items.find(i => i.id === id);
+    const item = items?.find(i => i.id === id);
     if (!item) return;
 
     if (isAdmin) {
@@ -243,7 +245,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
                 className="bg-card px-4 py-1.5 rounded-full border border-border shadow-sm animate-pulse-ring flex items-center gap-2"
               >
                 <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground whitespace-nowrap">
-                  {targetUserId ? 'Back to Aria' : 'Oct 24'}
+                  OCT 24
                 </span>
               </button>
             </div>
@@ -357,7 +359,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       <div className="space-y-1 md:space-y-2">
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => {
-            const status = sharedStatuses.find(s => s.itemId === item.id);
+            const status = sharedStatuses?.find(s => s.itemId === item.id);
             const fulfillments = status?.fulfillments || [];
             const isFulfilled = isAdmin ? item.purchased : fulfillments.length > 0;
 
@@ -376,7 +378,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
           })
         ) : (
           <div className="py-16 md:py-24 text-center text-muted-foreground font-light italic text-sm">
-            No items match your current filter.
+            {items ? 'No items match your current filter.' : 'Loading your desires...'}
           </div>
         )}
       </div>
