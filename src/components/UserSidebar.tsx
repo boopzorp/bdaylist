@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, Quote, Cake, Gift, PartyPopper, UserCircle, Eye } from 'lucide-react';
+import { Cake, Gift, PartyPopper, UserCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -59,15 +59,11 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, onAd
           Aria Noir
         </h1>
         
-        <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground font-mono tracking-tight mt-6">
-          <div className="flex items-center gap-2 bg-card/60 px-4 py-1.5 rounded-full border border-border shadow-sm backdrop-blur-sm">
-            <Calendar size={14} className="text-primary" />
-            <span>Oct 24</span>
-          </div>
-          <div className="flex items-center gap-2 bg-card/60 px-4 py-1.5 rounded-full border border-border shadow-sm backdrop-blur-sm max-w-[240px] text-center">
-            <Quote size={14} className="text-primary shrink-0" />
-            <span className="italic">"Minimalism is about focusing on what matters."</span>
-          </div>
+        <div className="flex flex-col items-center gap-4 mt-8 font-mono text-sm tracking-tight text-muted-foreground">
+          <span className="uppercase tracking-widest opacity-80">Oct 24</span>
+          <p className="max-w-[220px] text-center italic leading-relaxed opacity-70 px-4">
+            "Minimalism is about focusing on what matters."
+          </p>
         </div>
 
         {/* Theme Switcher */}
