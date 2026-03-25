@@ -5,9 +5,12 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Sparkles, Loader2, Filter, Heart, ShoppingBag, PartyPopper } from 'lucide-react';
 import WishlistItemCard from '@/components/WishlistItemCard';
 import EditItemDialog from '@/components/EditItemDialog';
+import FriendOnboardingDialog from '@/components/FriendOnboardingDialog';
 import { suggestWishlistItemDetails } from '@/ai/flows/suggest-wishlist-item-details';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useFirebase, useCollection, useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { collection, doc, query, orderBy, getDocs, updateDoc, arrayUnion, setDoc, deleteDoc } from 'firebase/firestore';
 import { 
   Tabs, 
   TabsList, 
@@ -32,46 +35,59 @@ export interface WishlistItem {
   note?: string;
   purchased: boolean;
   createdAt: number;
+  userId: string;
 }
 
 interface WishlistPanelProps {
   isAdmin: boolean;
+  targetUserId: string | null;
   isProfileCollapsed: boolean;
   onToggleProfile: (collapsed: boolean) => void;
 }
 
-export default function WishlistPanel({ isAdmin, isProfileCollapsed, onToggleProfile }: WishlistPanelProps) {
-  const [items, setItems] = useState<WishlistItem[]>([]);
+export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapsed, onToggleProfile }: WishlistPanelProps) {
+  const { firestore } = useFirebase();
+  const { user } = useUser();
   const [newItemName, setNewItemName] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newType, setNewType] = useState<ItemType>('like');
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [editingItem, setEditingItem] = useState<WishlistItem | null>(null);
-  const [mounted, setMounted] = useState(false);
-  
   const [activeTab, setActiveTab] = useState<'all' | 'like' | 'need'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [friendName, setFriendName] = useState('');
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Firestore Queries
+  const itemsRef = useMemoFirebase(() => {
+    if (!firestore || !targetUserId) return null;
+    return query(collection(firestore, 'userProfiles', targetUserId, 'wishlistItems'), orderBy('createdAt', 'desc'));
+  }, [firestore, targetUserId]);
+
+  const { data: items = [] } = useCollection<WishlistItem>(itemsRef);
+
+  const sharedRef = useMemoFirebase(() => {
+    if (!firestore || !targetUserId) return null;
+    return collection(firestore, 'sharedWishlistStatuses');
+  }, [firestore, targetUserId]);
+
+  const { data: sharedStatuses = [] } = useCollection(sharedRef);
+
   useEffect(() => {
-    const saved = localStorage.getItem('wishstream_items_v3');
-    if (saved) {
-      setItems(JSON.parse(saved));
-    } else {
-      setItems([
-        { id: '1', name: 'Leica M11 Monochrom', url: 'https://leica-camera.com', purchased: false, category: 'Photography', type: 'like', createdAt: Date.now() - 1000000 },
-        { id: '2', name: 'Vitra Eames Lounge Chair', url: 'https://vitra.com', purchased: false, category: 'Furniture', type: 'need', createdAt: Date.now() - 2000000 },
-        { id: '3', name: 'Kyoto Autumn Trip', url: '', purchased: true, category: 'Travel', type: 'like', createdAt: Date.now() - 3000000 },
-      ]);
+    if (!isAdmin && targetUserId) {
+      const savedFriend = localStorage.getItem(`friend_data_${targetUserId}`);
+      if (!savedFriend) {
+        setShowOnboarding(true);
+      } else {
+        setFriendName(JSON.parse(savedFriend).name);
+      }
     }
-    setMounted(true);
 
     const handleScroll = () => {
-      // If we're on mobile and the profile isn't collapsed yet, check if we should collapse it
       if (window.innerWidth < 768 && !isProfileCollapsed) {
-        const threshold = isAdmin ? 500 : 400;
-        if (window.scrollY > threshold) {
+        if (window.scrollY > 400) {
           onToggleProfile(true);
         }
       }
@@ -79,13 +95,7 @@ export default function WishlistPanel({ isAdmin, isProfileCollapsed, onTogglePro
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isAdmin, isProfileCollapsed, onToggleProfile]);
-
-  useEffect(() => {
-    if (mounted) {
-      localStorage.setItem('wishstream_items_v3', JSON.stringify(items));
-    }
-  }, [items, mounted]);
+  }, [isAdmin, targetUserId, isProfileCollapsed, onToggleProfile]);
 
   const categories = useMemo(() => {
     const cats = Array.from(new Set(items.map(item => item.category)));
@@ -100,12 +110,14 @@ export default function WishlistPanel({ isAdmin, isProfileCollapsed, onTogglePro
     });
   }, [items, activeTab, selectedCategory]);
 
-  const handleAddItem = (e: React.FormEvent) => {
+  const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemName.trim()) return;
+    if (!newItemName.trim() || !firestore || !user) return;
     
-    const item: WishlistItem = {
-      id: Math.random().toString(36).substr(2, 9),
+    const itemId = Math.random().toString(36).substr(2, 9);
+    const itemData = {
+      id: itemId,
+      userId: user.uid,
       name: newItemName,
       url: '',
       note: '',
@@ -115,7 +127,7 @@ export default function WishlistPanel({ isAdmin, isProfileCollapsed, onTogglePro
       createdAt: Date.now(),
     };
     
-    setItems(prev => [item, ...prev]);
+    await setDoc(doc(firestore, 'userProfiles', user.uid, 'wishlistItems', itemId), itemData);
     setNewItemName('');
     setNewCategory('');
   };
@@ -136,35 +148,79 @@ export default function WishlistPanel({ isAdmin, isProfileCollapsed, onTogglePro
     }
   };
 
-  const togglePurchased = (id: string) => {
-    if (!isAdmin) return;
-    setItems(prev => prev.map(item => 
-      item.id === id ? { ...item, purchased: !item.purchased } : item
-    ));
+  const togglePurchased = async (id: string) => {
+    if (!firestore || !targetUserId) return;
+    
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (isAdmin) {
+      // Admin toggles main status
+      await updateDoc(doc(firestore, 'userProfiles', targetUserId, 'wishlistItems', id), {
+        purchased: !item.purchased
+      });
+    } else {
+      // Friend "ticks off" - this increments fulfillment count in shared collection
+      const savedFriend = localStorage.getItem(`friend_data_${targetUserId}`);
+      const friendData = savedFriend ? JSON.parse(savedFriend) : { name: friendName, shareName: false };
+      
+      const sharedDocRef = doc(firestore, 'sharedWishlistStatuses', id);
+      await setDoc(sharedDocRef, {
+        userId: targetUserId,
+        itemId: id,
+        tickedOff: true,
+        fulfillments: arrayUnion({
+          friendName: friendData.shareName ? friendData.name : 'Anonymous',
+          shareName: friendData.shareName,
+          timestamp: Date.now()
+        })
+      }, { merge: true });
+
+      toast({
+        title: "Ticked Off!",
+        description: "Your friend will see this was fulfilled (but won't know it was you!).",
+      });
+    }
   };
 
-  const removeItem = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+  const removeItem = async (id: string) => {
+    if (!firestore || !user) return;
+    await deleteDoc(doc(firestore, 'userProfiles', user.uid, 'wishlistItems', id));
   };
 
-  const updateItem = (updatedItem: WishlistItem) => {
-    setItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+  const updateItem = async (updatedItem: WishlistItem) => {
+    if (!firestore || !user) return;
+    await setDoc(doc(firestore, 'userProfiles', user.uid, 'wishlistItems', updatedItem.id), updatedItem);
     setEditingItem(null);
+  };
+
+  const handleOnboardingComplete = async (data: { name: string; shareName: boolean }) => {
+    if (!firestore || !targetUserId) return;
+    
+    localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(data));
+    setFriendName(data.name);
+    setShowOnboarding(false);
+
+    // Add to Guestbook
+    const guestDocRef = doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
+    await setDoc(guestDocRef, {
+      guests: arrayUnion({
+        name: data.name,
+        shareName: data.shareName,
+        timestamp: Date.now()
+      })
+    }, { merge: true });
   };
 
   const restoreProfile = () => {
     onToggleProfile(false);
-    // Smoothly scroll to top once the profile is restored
     setTimeout(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 50);
   };
 
-  if (!mounted) return null;
-
   return (
     <div ref={containerRef} className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 xl:p-24">
-      {/* Sticky header that holds the title and the return-to-profile pill */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md -mx-6 px-6 py-4 mb-8 md:mb-12 md:relative md:bg-transparent md:backdrop-blur-none md:p-0 flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
         <div className="flex items-center justify-between w-full md:w-auto">
           <div>
@@ -174,7 +230,6 @@ export default function WishlistPanel({ isAdmin, isProfileCollapsed, onTogglePro
             <div className="w-10 md:w-12 h-[1px] bg-primary mt-2 md:mt-6 hidden md:block" />
           </div>
 
-          {/* Sticky Mobile Date Pill: Only shows when profile is collapsed */}
           {isProfileCollapsed && (
             <div className="relative md:hidden animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="absolute -top-3 -right-2 text-accent animate-float-slow">
@@ -188,7 +243,7 @@ export default function WishlistPanel({ isAdmin, isProfileCollapsed, onTogglePro
                 className="bg-card px-4 py-1.5 rounded-full border border-border shadow-sm animate-pulse-ring flex items-center gap-2"
               >
                 <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground whitespace-nowrap">
-                  Oct 24
+                  {targetUserId ? 'Back to Aria' : 'Oct 24'}
                 </span>
               </button>
             </div>
@@ -301,22 +356,35 @@ export default function WishlistPanel({ isAdmin, isProfileCollapsed, onTogglePro
 
       <div className="space-y-1 md:space-y-2">
         {filteredItems.length > 0 ? (
-          filteredItems.map((item) => (
-            <WishlistItemCard 
-              key={item.id} 
-              item={item} 
-              isAdmin={isAdmin}
-              onToggle={() => togglePurchased(item.id)}
-              onRemove={() => removeItem(item.id)} 
-              onEdit={() => setEditingItem(item)}
-            />
-          ))
+          filteredItems.map((item) => {
+            const status = sharedStatuses.find(s => s.itemId === item.id);
+            const fulfillments = status?.fulfillments || [];
+            const isFulfilled = isAdmin ? item.purchased : fulfillments.length > 0;
+
+            return (
+              <WishlistItemCard 
+                key={item.id} 
+                item={{...item, purchased: isFulfilled}} 
+                isAdmin={isAdmin}
+                onToggle={() => togglePurchased(item.id)}
+                onRemove={() => removeItem(item.id)} 
+                onEdit={() => setEditingItem(item)}
+                fulfillmentCount={fulfillments.length}
+                fulfillmentNames={isAdmin ? [] : fulfillments.filter(f => f.shareName).map(f => f.friendName)}
+              />
+            );
+          })
         ) : (
           <div className="py-16 md:py-24 text-center text-muted-foreground font-light italic text-sm">
             No items match your current filter.
           </div>
         )}
       </div>
+
+      <FriendOnboardingDialog 
+        open={showOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
 
       {editingItem && (
         <EditItemDialog 

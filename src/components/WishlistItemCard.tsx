@@ -1,8 +1,9 @@
+
 "use client";
 
 import React, { useState } from 'react';
 import { WishlistItem } from '@/components/WishlistPanel';
-import { ExternalLink, Trash2, Check, Pencil, Heart, ShoppingBag } from 'lucide-react';
+import { ExternalLink, Trash2, Check, Pencil, Heart, ShoppingBag, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface WishlistItemCardProps {
@@ -11,31 +12,41 @@ interface WishlistItemCardProps {
   onToggle: () => void;
   onRemove: () => void;
   onEdit: () => void;
+  fulfillmentCount?: number;
+  fulfillmentNames?: string[];
 }
 
-export default function WishlistItemCard({ item, isAdmin, onToggle, onRemove, onEdit }: WishlistItemCardProps) {
+export default function WishlistItemCard({ 
+  item, 
+  isAdmin, 
+  onToggle, 
+  onRemove, 
+  onEdit,
+  fulfillmentCount = 0,
+  fulfillmentNames = []
+}: WishlistItemCardProps) {
   const [isTicking, setIsTicking] = useState(false);
 
   const handleToggle = () => {
-    if (!isAdmin) return;
     setIsTicking(true);
     onToggle();
     setTimeout(() => setIsTicking(false), 400);
   };
+
+  const isFulfilled = item.purchased;
 
   return (
     <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-4 md:py-6 border-b border-border hover:border-primary/30 transition-colors">
       <div className="flex items-start md:items-center gap-4 md:gap-6 flex-1">
         <button 
           onClick={handleToggle}
-          disabled={!isAdmin}
           className={cn(
             "w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 flex-shrink-0 mt-0.5 md:mt-0",
-            item.purchased 
+            isFulfilled 
               ? 'bg-primary border-primary text-primary-foreground' 
               : 'border-border text-transparent hover:border-primary',
             isTicking && 'animate-tick-pop',
-            !isAdmin && 'cursor-default opacity-80'
+            !isAdmin && isFulfilled && 'cursor-default opacity-80'
           )}
         >
           <Check size={12} strokeWidth={3} />
@@ -45,7 +56,7 @@ export default function WishlistItemCard({ item, isAdmin, onToggle, onRemove, on
           <div className="flex items-center gap-2 md:gap-3 flex-wrap">
             <span className={cn(
               "text-base md:text-lg font-light transition-all duration-300 truncate",
-              item.purchased ? 'text-muted-foreground line-through' : 'text-foreground'
+              isFulfilled ? 'text-muted-foreground line-through' : 'text-foreground'
             )}>
               {item.name}
             </span>
@@ -60,6 +71,16 @@ export default function WishlistItemCard({ item, isAdmin, onToggle, onRemove, on
             <span className="text-[8px] md:text-[9px] font-mono text-muted-foreground uppercase tracking-widest bg-muted/50 px-1.5 md:px-2 py-0.5 rounded-md border border-border/50 shrink-0">
               {item.category}
             </span>
+            {fulfillmentCount > 0 && (
+              <span className="flex items-center gap-1.5 text-[8px] md:text-[9px] font-mono text-accent uppercase tracking-widest bg-accent/10 px-1.5 py-0.5 rounded-md border border-accent/20">
+                <Users size={10} /> {fulfillmentCount} {fulfillmentCount === 1 ? 'Person' : 'People'}
+              </span>
+            )}
+            {fulfillmentNames.length > 0 && (
+              <span className="text-[9px] text-muted-foreground italic truncate max-w-[150px]">
+                {fulfillmentNames.join(', ')}
+              </span>
+            )}
             {item.note && (
               <span className="text-[9px] md:text-[10px] text-muted-foreground italic truncate max-w-[150px] md:max-w-[200px]">
                 {item.note}
