@@ -48,7 +48,7 @@ interface WishlistPanelProps {
 
 export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapsed, onToggleProfile }: WishlistPanelProps) {
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const [newItemName, setNewItemName] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newType, setNewType] = useState<ItemType>('like');
@@ -390,7 +390,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
           })
         ) : (
           <div className="py-16 md:py-24 text-center text-muted-foreground font-light italic text-sm">
-            {items ? 'No items in this stream yet.' : (isUserLoading || (isFriendMode && !user)) ? 'Identifying Guest...' : 'Loading BddayList...'}
+            {items ? 'No items in this stream yet.' : (isUserLoading || (!isAdmin && !user)) ? 'Identifying Guest...' : 'Loading BddayList...'}
           </div>
         )}
       </div>
