@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -29,16 +30,18 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
   }, []);
 
   const profileRef = useMemoFirebase(() => {
-    if (!firestore || !targetUserId) return null;
+    // SECURITY: Must be signed in to read profiles
+    if (!firestore || !targetUserId || !user) return null;
     return doc(firestore, 'userProfiles', targetUserId);
-  }, [firestore, targetUserId]);
+  }, [firestore, targetUserId, user]);
 
   const { data: profile } = useDoc(profileRef);
 
   const friendsQuery = useMemoFirebase(() => {
-    if (!firestore || !targetUserId) return null;
+    // SECURITY: Must be signed in to read guests list
+    if (!firestore || !targetUserId || !user) return null;
     return doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
-  }, [firestore, targetUserId]);
+  }, [firestore, targetUserId, user]);
 
   const { data: guestListDoc } = useDoc(friendsQuery);
   const guestList = (guestListDoc?.guests as any[]) || [];

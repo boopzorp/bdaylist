@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -60,28 +61,28 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Firestore Queries
+  // Firestore Queries - SECURITY: Must wait for user to be authenticated to satisfy isSignedIn()
   const itemsRef = useMemoFirebase(() => {
-    if (!firestore || !targetUserId) return null;
+    if (!firestore || !targetUserId || !user) return null;
     return query(collection(firestore, 'userProfiles', targetUserId, 'wishlistItems'), orderBy('createdAt', 'desc'));
-  }, [firestore, targetUserId]);
+  }, [firestore, targetUserId, user]);
 
   const { data: items } = useCollection<WishlistItem>(itemsRef);
 
   const profileRef = useMemoFirebase(() => {
-    if (!firestore || !targetUserId) return null;
+    if (!firestore || !targetUserId || !user) return null;
     return doc(firestore, 'userProfiles', targetUserId);
-  }, [firestore, targetUserId]);
+  }, [firestore, targetUserId, user]);
 
   const { data: profile } = useDoc(profileRef);
 
   const sharedRef = useMemoFirebase(() => {
-    if (!firestore || !targetUserId) return null;
+    if (!firestore || !targetUserId || !user) return null;
     return query(
       collection(firestore, 'sharedWishlistStatuses'), 
       where('userId', '==', targetUserId)
     );
-  }, [firestore, targetUserId]);
+  }, [firestore, targetUserId, user]);
 
   const { data: sharedStatuses } = useCollection(sharedRef);
 
@@ -99,9 +100,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       if (window.innerWidth < 768) {
         if (window.scrollY > 400 && !isProfileCollapsed) {
           onToggleProfile(true);
-        } else if (window.scrollY < 10 && isProfileCollapsed) {
-          // Allow scrolling back only if we are at the very top and it's not yet fully locked
-          // But per instructions, the pill is the primary way to return.
         }
       }
     };
@@ -392,7 +390,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
           })
         ) : (
           <div className="py-16 md:py-24 text-center text-muted-foreground font-light italic text-sm">
-            {items ? 'No items in this stream yet.' : 'Loading BddayList...'}
+            {items ? 'No items in this stream yet.' : (isUserLoading || (isFriendMode && !user)) ? 'Identifying Guest...' : 'Loading BddayList...'}
           </div>
         )}
       </div>

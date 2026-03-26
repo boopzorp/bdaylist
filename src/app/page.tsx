@@ -60,9 +60,10 @@ export default function Home() {
   }, [theme]);
 
   const profileRef = useMemoFirebase(() => {
-    if (!firestore || !targetUserId) return null;
+    // SECURITY: We must be signed in to read any profile according to rules
+    if (!firestore || !targetUserId || !user) return null;
     return doc(firestore, 'userProfiles', targetUserId);
-  }, [firestore, targetUserId]);
+  }, [firestore, targetUserId, user]);
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
 
@@ -109,7 +110,8 @@ export default function Home() {
   };
 
   // Wait for hydration to avoid mismatch on browser-specific logic
-  const isGlobalLoading = !hasHydrated || isUserLoading || (!!targetUserId && isProfileLoading);
+  // Also wait for user if we are in friend mode to satisfy security rules
+  const isGlobalLoading = !hasHydrated || isUserLoading || (isFriendMode && !user) || (!!targetUserId && isProfileLoading);
 
   if (isGlobalLoading) {
     return (
@@ -130,7 +132,7 @@ export default function Home() {
             Bdday<span className="font-normal italic">List</span>
           </h2>
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.4em] font-mono">
-            {!hasHydrated ? "Connecting..." : isUserLoading ? "Identifying Stream..." : "Fetching Desires..."}
+            {!hasHydrated ? "Connecting..." : isUserLoading ? "Identifying Stream..." : (isFriendMode && !user) ? "Identifying Guest..." : "Fetching Desires..."}
           </p>
         </div>
       </div>
