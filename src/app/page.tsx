@@ -10,10 +10,11 @@ import { cn } from '@/lib/utils';
 import { useUser, useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Sparkles, PartyPopper } from 'lucide-react';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   
   // Initialize with static defaults to prevent hydration mismatch
   const [theme, setTheme] = useState('theme-noir');
@@ -36,11 +37,17 @@ export default function Home() {
     // Read URL params
     const params = new URLSearchParams(window.location.search);
     const uParam = params.get('u');
+    
+    // If we have a friend UID but no user, auto-sign in anonymously
+    if (uParam && !user && !isUserLoading && auth) {
+      initiateAnonymousSignIn(auth);
+    }
+
     const effectiveUserId = uParam || (user?.uid ?? null);
     
     setTargetUserId(effectiveUserId);
     setIsFriendMode(!!uParam && uParam !== user?.uid);
-  }, [user]);
+  }, [user, isUserLoading, auth]);
 
   // Sync theme class to body so Portals (Dialogs) pick up variables
   useEffect(() => {
@@ -61,6 +68,8 @@ export default function Home() {
 
   useEffect(() => {
     if (isUserLoading || isProfileLoading || !hasHydrated) return;
+    
+    // If not logged in and not in friend mode, we show landing page
     if (!user && !isFriendMode) return;
 
     if (profile) {
@@ -70,6 +79,7 @@ export default function Home() {
       }
       setShowSetup(false);
     } else if (user && user.uid === targetUserId && !isProfileLoading) {
+      // Only show setup if we are looking at our own profile and it doesn't exist
       setShowSetup(true);
     }
   }, [profile, isProfileLoading, user, isUserLoading, targetUserId, isFriendMode, theme, hasHydrated]);
@@ -127,6 +137,7 @@ export default function Home() {
     );
   }
 
+  // If no user and no shared link being viewed, show landing page
   if (!user && !isFriendMode) {
     return <LandingPage currentTheme={theme} onThemeChange={handleThemeChange} />;
   }
