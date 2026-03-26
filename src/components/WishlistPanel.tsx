@@ -166,7 +166,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   };
 
   const togglePurchased = async (id: string) => {
-    if (!firestore || !targetUserId) return;
+    if (!firestore || !targetUserId || !user) return;
     
     const item = items?.find(i => i.id === id);
     if (!item) return;
@@ -180,15 +180,20 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       const friendData = savedFriend ? JSON.parse(savedFriend) : { name: friendName, shareName: false };
       
       const sharedDocRef = doc(firestore, 'sharedWishlistStatuses', id);
+      
+      // We use a Map keyed by user.uid to ensure uniqueness.
+      // If the same friend clicks again, it just updates their existing record.
       await setDoc(sharedDocRef, {
         userId: targetUserId,
         itemId: id,
         tickedOff: true,
-        fulfillments: arrayUnion({
-          friendName: friendData.shareName ? friendData.name : 'Anonymous',
-          shareName: friendData.shareName,
-          timestamp: Date.now()
-        })
+        fulfillments: {
+          [user.uid]: {
+            friendName: friendData.shareName ? friendData.name : 'Anonymous',
+            shareName: friendData.shareName,
+            timestamp: Date.now()
+          }
+        }
       }, { merge: true });
 
       toast({
@@ -372,7 +377,12 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => {
             const status = sharedStatuses?.find(s => s.itemId === item.id);
-            const fulfillments = status?.fulfillments || [];
+            // Handle both legacy array and new Map structure for backward compatibility
+            const rawFulfillments = status?.fulfillments || [];
+            const fulfillments: any[] = Array.isArray(rawFulfillments) 
+              ? rawFulfillments 
+              : Object.values(rawFulfillments);
+              
             const isFulfilled = isAdmin ? item.purchased : fulfillments.length > 0;
 
             return (
