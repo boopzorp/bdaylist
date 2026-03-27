@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -61,7 +60,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Identity logic for friends: Determine which ID we are acting as
   const activeGuestId = useMemo(() => {
     if (isAdmin || !targetUserId || !user) return null;
     const savedFriendStr = typeof window !== 'undefined' ? localStorage.getItem(`friend_data_${targetUserId}`) : null;
@@ -76,7 +74,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     return user.uid;
   }, [isAdmin, targetUserId, user, friendName]);
 
-  // Firestore Queries
   const itemsRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId || !user) return null;
     return query(collection(firestore, 'userProfiles', targetUserId, 'wishlistItems'), orderBy('createdAt', 'desc'));
@@ -108,15 +105,12 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const { data: sharedStatuses } = useCollection(sharedRef);
 
-  // Identity Sync Logic
   useEffect(() => {
     if (isAdmin || !targetUserId || !user || isGuestListLoading) return;
 
-    // RESILIENCE: Merge map-based guests and flat-field-based guests (from previous dots-in-names bug)
     const rawData = guestListDoc || {};
     const guestMap = { ...(rawData.guests || {}) } as Record<string, any>;
     
-    // Check for flat fields like "guests.UID"
     Object.keys(rawData).forEach(key => {
       if (key.startsWith('guests.')) {
         const id = key.split('.')[1];
@@ -126,14 +120,12 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       }
     });
     
-    // Check if my current session or my persistent ID is in the guestbook
     const myProfileInGuestbook = guestMap[user.uid] || (activeGuestId ? guestMap[activeGuestId] : null);
     
     const savedFriendStr = localStorage.getItem(`friend_data_${targetUserId}`);
     const savedFriend = savedFriendStr ? JSON.parse(savedFriendStr) : null;
 
     if (myProfileInGuestbook) {
-      // Sync local storage with guestbook
       const friendData = { 
         name: myProfileInGuestbook.name, 
         shareName: myProfileInGuestbook.shareName,
@@ -149,7 +141,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     }
   }, [isAdmin, targetUserId, user, guestListDoc, isGuestListLoading, activeGuestId]);
 
-  // Handle Mobile Profile Collapse
   useEffect(() => {
     const handleScroll = () => {
       if (window.innerWidth < 768) {
@@ -220,7 +211,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   };
 
   const togglePurchased = async (id: string) => {
-    if (!firestore || !targetUserId || !user || !activeGuestId) return;
+    if (!firestore || !targetUserId || !user) return;
     
     const item = items?.find(i => i.id === id);
     if (!item) return;
@@ -230,6 +221,8 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
         purchased: !item.purchased
       });
     } else {
+      if (!activeGuestId) return;
+
       const savedFriend = localStorage.getItem(`friend_data_${targetUserId}`);
       const friendData = savedFriend ? JSON.parse(savedFriend) : { name: friendName, shareName: false };
       
@@ -285,7 +278,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
     const guestDocRef = doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
     
-    // Correctly nested object for Map merging in Firestore
     const updates = {
       guests: {
         [persistentId]: {
@@ -309,7 +301,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   const existingGuestList = useMemo(() => {
     if (!guestListDoc) return [];
     
-    // RESILIENCE: Merge map-based guests and flat-field-based guests
     const rawData = guestListDoc as any;
     const guestMap = { ...(rawData.guests || {}) } as Record<string, any>;
     
@@ -484,6 +475,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
                 onEdit={() => setEditingItem(item)}
                 fulfillmentCount={fulfillmentsList.length}
                 fulfillmentNames={isAdmin ? [] : fulfillmentsList.filter((f: any) => f.shareName).map((f: any) => f.friendName)}
+                isFulfilledByMe={isFulfilledByMe}
               />
             );
           })

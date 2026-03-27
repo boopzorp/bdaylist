@@ -13,6 +13,7 @@ interface WishlistItemCardProps {
   onEdit: () => void;
   fulfillmentCount?: number;
   fulfillmentNames?: string[];
+  isFulfilledByMe?: boolean;
 }
 
 export default function WishlistItemCard({ 
@@ -22,31 +23,28 @@ export default function WishlistItemCard({
   onRemove, 
   onEdit,
   fulfillmentCount = 0,
-  fulfillmentNames = []
+  fulfillmentNames = [],
+  isFulfilledByMe = false
 }: WishlistItemCardProps) {
   const [isTicking, setIsTicking] = useState(false);
 
+  const isFulfilled = item.purchased;
+
   const handleToggle = () => {
-    if (!isAdmin && isFulfilled && !isFulfilledByMe) return; // Prevent others from unticking if they didn't tick it
+    // If it's already fulfilled by someone else and I'm not the admin/fulfiller, I can't untick it
+    if (!isAdmin && isFulfilled && !isFulfilledByMe) return; 
+    
     setIsTicking(true);
     onToggle();
     setTimeout(() => setIsTicking(false), 400);
   };
 
-  const isFulfilled = item.purchased;
-
-  // We don't have isFulfilledByMe directly in props here for simple rendering,
-  // but we can assume if fulfillmentNames contains the friend, they ticked it.
-  // For the UI density, we compute a summary.
   const fulfillmentSummary = useMemo(() => {
     if (fulfillmentNames.length === 0) return null;
     if (fulfillmentNames.length === 1) return `Fulfilled by ${fulfillmentNames[0]}`;
     if (fulfillmentNames.length === 2) return `Fulfilled by ${fulfillmentNames[0]} & ${fulfillmentNames[1]}`;
     return `Fulfilled by ${fulfillmentNames[0]} & ${fulfillmentNames.length - 1} others`;
   }, [fulfillmentNames]);
-
-  // Note: isFulfilledByMe check is handled in the parent WishlistPanel logic for the actual DB update,
-  // this component just reflects the state passed via `item.purchased`.
 
   return (
     <div className="group flex flex-col sm:flex-row sm:items-center justify-between py-5 md:py-6 border-b border-border hover:border-primary/20 transition-all duration-300">
@@ -59,7 +57,7 @@ export default function WishlistItemCard({
               ? 'bg-primary border-primary text-primary-foreground' 
               : 'border-border text-transparent hover:border-primary',
             isTicking && 'animate-tick-pop',
-            !isAdmin && isFulfilled && 'cursor-default'
+            (!isAdmin && isFulfilled && !isFulfilledByMe) && 'cursor-default opacity-50'
           )}
         >
           <Check size={12} strokeWidth={3} />
