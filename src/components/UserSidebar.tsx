@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Cake, Gift, PartyPopper, Share2, Users, LogOut, Sparkles, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,6 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
   }, []);
 
   const profileRef = useMemoFirebase(() => {
-    // SECURITY: Must be signed in to read profiles
     if (!firestore || !targetUserId || !user) return null;
     return doc(firestore, 'userProfiles', targetUserId);
   }, [firestore, targetUserId, user]);
@@ -38,13 +37,16 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
   const { data: profile } = useDoc(profileRef);
 
   const friendsQuery = useMemoFirebase(() => {
-    // SECURITY: Must be signed in to read guests list
     if (!firestore || !targetUserId || !user) return null;
     return doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
   }, [firestore, targetUserId, user]);
 
   const { data: guestListDoc } = useDoc(friendsQuery);
-  const guestList = (guestListDoc?.guests as any[]) || [];
+  
+  const guestList = useMemo(() => {
+    if (!guestListDoc?.guests) return [];
+    return Object.values(guestListDoc.guests) as any[];
+  }, [guestListDoc]);
 
   if (!mounted) return null;
 

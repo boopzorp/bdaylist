@@ -10,7 +10,7 @@ import { suggestWishlistItemDetails } from '@/ai/flows/suggest-wishlist-item-det
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useFirebase, useCollection, useUser, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, doc, query, orderBy, where, updateDoc, arrayUnion, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, query, orderBy, where, updateDoc, setDoc, deleteDoc, deleteField } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { 
   Tabs, 
@@ -61,7 +61,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Firestore Queries - SECURITY: Must wait for user to be authenticated to satisfy isSignedIn()
+  // Firestore Queries
   const itemsRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId || !user) return null;
     return query(collection(firestore, 'userProfiles', targetUserId, 'wishlistItems'), orderBy('createdAt', 'desc'));
@@ -76,6 +76,13 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const { data: profile } = useDoc(profileRef);
 
+  const guestsRef = useMemoFirebase(() => {
+    if (!firestore || !targetUserId || !user) return null;
+    return doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
+  }, [firestore, targetUserId, user]);
+
+  const { data: guestListDoc, isLoading: isGuestListLoading } = useDoc(guestsRef);
+
   const sharedRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId || !user) return null;
     return query(
@@ -86,16 +93,33 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const { data: sharedStatuses } = useCollection(sharedRef);
 
+  // Identity Sync Logic
   useEffect(() => {
-    if (!isAdmin && targetUserId) {
-      const savedFriend = localStorage.getItem(`friend_data_${targetUserId}`);
-      if (!savedFriend) {
-        setShowOnboarding(true);
-      } else {
-        setFriendName(JSON.parse(savedFriend).name);
-      }
-    }
+    if (isAdmin || !targetUserId || !user || isGuestListLoading) return;
 
+    const guestMap = (guestListDoc?.guests || {}) as Record<string, any>;
+    const myProfileInGuestbook = guestMap[user.uid];
+    
+    // Check localStorage
+    const savedFriendStr = localStorage.getItem(`friend_data_${targetUserId}`);
+    const savedFriend = savedFriendStr ? JSON.parse(savedFriendStr) : null;
+
+    if (myProfileInGuestbook) {
+      // Sync local storage with guestbook
+      const friendData = { name: myProfileInGuestbook.name, shareName: myProfileInGuestbook.shareName };
+      localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(friendData));
+      setFriendName(friendData.name);
+      setShowOnboarding(false);
+    } else if (savedFriend) {
+      // If we have local storage but not in guestbook (e.g. wiped or new user), we'll use local storage to re-register
+      handleOnboardingComplete(savedFriend);
+    } else {
+      setShowOnboarding(true);
+    }
+  }, [isAdmin, targetUserId, user, guestListDoc, isGuestListLoading]);
+
+  // Handle Mobile Profile Collapse
+  useEffect(() => {
     const handleScroll = () => {
       if (window.innerWidth < 768) {
         if (window.scrollY > 400 && !isProfileCollapsed) {
@@ -103,10 +127,9 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
         }
       }
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isAdmin, targetUserId, isProfileCollapsed, onToggleProfile]);
+  }, [isProfileCollapsed, onToggleProfile]);
 
   const categories = useMemo(() => {
     if (!items) return ['all'];
@@ -179,27 +202,34 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       const savedFriend = localStorage.getItem(`friend_data_${targetUserId}`);
       const friendData = savedFriend ? JSON.parse(savedFriend) : { name: friendName, shareName: false };
       
+      const status = sharedStatuses?.find(s => s.itemId === id);
+      const fulfills = status?.fulfillments || {};
+      const isFulfilledByMe = !!fulfills[user.uid];
+
       const sharedDocRef = doc(firestore, 'sharedWishlistStatuses', id);
       
-      // We use a Map keyed by user.uid to ensure uniqueness.
-      // If the same friend clicks again, it just updates their existing record.
-      await setDoc(sharedDocRef, {
-        userId: targetUserId,
-        itemId: id,
-        tickedOff: true,
-        fulfillments: {
-          [user.uid]: {
-            friendName: friendData.shareName ? friendData.name : 'Anonymous',
-            shareName: friendData.shareName,
-            timestamp: Date.now()
+      if (isFulfilledByMe) {
+        // Untick
+        await updateDoc(sharedDocRef, {
+          [`fulfillments.${user.uid}`]: deleteField()
+        });
+        toast({ title: "Unmarked", description: "You've removed your fulfillment tag." });
+      } else {
+        // Tick
+        await setDoc(sharedDocRef, {
+          userId: targetUserId,
+          itemId: id,
+          tickedOff: true,
+          fulfillments: {
+            [user.uid]: {
+              friendName: friendData.shareName ? friendData.name : 'Anonymous',
+              shareName: friendData.shareName,
+              timestamp: Date.now()
+            }
           }
-        }
-      }, { merge: true });
-
-      toast({
-        title: "Ticked Off!",
-        description: "Surprise! Fulfillment recorded.",
-      });
+        }, { merge: true });
+        toast({ title: "Ticked Off!", description: "Surprise! Fulfillment recorded." });
+      }
     }
   };
 
@@ -215,19 +245,22 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   };
 
   const handleOnboardingComplete = async (data: { name: string; shareName: boolean }) => {
-    if (!firestore || !targetUserId) return;
+    if (!firestore || !targetUserId || !user) return;
     
     localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(data));
     setFriendName(data.name);
     setShowOnboarding(false);
 
+    // Save to guest Map
     const guestDocRef = doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
     await setDoc(guestDocRef, {
-      guests: arrayUnion({
-        name: data.name,
-        shareName: data.shareName,
-        timestamp: Date.now()
-      })
+      guests: {
+        [user.uid]: {
+          name: data.name,
+          shareName: data.shareName,
+          timestamp: Date.now()
+        }
+      }
     }, { merge: true });
   };
 
@@ -237,6 +270,15 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 50);
   };
+
+  const existingGuestList = useMemo(() => {
+    if (!guestListDoc?.guests) return [];
+    return Object.entries(guestListDoc.guests).map(([id, data]: [string, any]) => ({
+      id,
+      name: data.name,
+      shareName: data.shareName
+    }));
+  }, [guestListDoc]);
 
   return (
     <div ref={containerRef} className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 xl:p-24">
@@ -377,13 +419,11 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => {
             const status = sharedStatuses?.find(s => s.itemId === item.id);
-            // Handle both legacy array and new Map structure for backward compatibility
-            const rawFulfillments = status?.fulfillments || [];
-            const fulfillments: any[] = Array.isArray(rawFulfillments) 
-              ? rawFulfillments 
-              : Object.values(rawFulfillments);
-              
-            const isFulfilled = isAdmin ? item.purchased : fulfillments.length > 0;
+            const fulfillments = status?.fulfillments || {};
+            const fulfillmentsList = Object.values(fulfillments);
+            
+            const isFulfilled = isAdmin ? item.purchased : fulfillmentsList.length > 0;
+            const isFulfilledByMe = user ? !!fulfillments[user.uid] : false;
 
             return (
               <WishlistItemCard 
@@ -393,8 +433,8 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
                 onToggle={() => togglePurchased(item.id)}
                 onRemove={() => removeItem(item.id)} 
                 onEdit={() => setEditingItem(item)}
-                fulfillmentCount={fulfillments.length}
-                fulfillmentNames={isAdmin ? [] : fulfillments.filter(f => f.shareName).map(f => f.friendName)}
+                fulfillmentCount={fulfillmentsList.length}
+                fulfillmentNames={isAdmin ? [] : fulfillmentsList.filter((f: any) => f.shareName).map((f: any) => f.friendName)}
               />
             );
           })
@@ -407,6 +447,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
       <FriendOnboardingDialog 
         open={showOnboarding}
+        existingGuests={existingGuestList}
         onComplete={handleOnboardingComplete}
       />
 
