@@ -61,6 +61,21 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Identity logic for friends: Determine which ID we are acting as
+  const activeGuestId = useMemo(() => {
+    if (isAdmin || !targetUserId || !user) return null;
+    const savedFriendStr = localStorage.getItem(`friend_data_${targetUserId}`);
+    if (savedFriendStr) {
+      try {
+        const saved = JSON.parse(savedFriendStr);
+        return saved.persistentId || user.uid;
+      } catch (e) {
+        return user.uid;
+      }
+    }
+    return user.uid;
+  }, [isAdmin, targetUserId, user]);
+
   // Firestore Queries
   const itemsRef = useMemoFirebase(() => {
     if (!firestore || !targetUserId || !user) return null;
@@ -98,25 +113,30 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     if (isAdmin || !targetUserId || !user || isGuestListLoading) return;
 
     const guestMap = (guestListDoc?.guests || {}) as Record<string, any>;
-    const myProfileInGuestbook = guestMap[user.uid];
     
-    // Check localStorage
+    // Check if my current session or my persistent ID is in the guestbook
+    const myProfileInGuestbook = guestMap[user.uid] || (activeGuestId ? guestMap[activeGuestId] : null);
+    
     const savedFriendStr = localStorage.getItem(`friend_data_${targetUserId}`);
     const savedFriend = savedFriendStr ? JSON.parse(savedFriendStr) : null;
 
     if (myProfileInGuestbook) {
       // Sync local storage with guestbook
-      const friendData = { name: myProfileInGuestbook.name, shareName: myProfileInGuestbook.shareName };
+      const friendData = { 
+        name: myProfileInGuestbook.name, 
+        shareName: myProfileInGuestbook.shareName,
+        persistentId: activeGuestId || user.uid
+      };
       localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(friendData));
       setFriendName(friendData.name);
       setShowOnboarding(false);
     } else if (savedFriend) {
-      // If we have local storage but not in guestbook (e.g. wiped or new user), we'll use local storage to re-register
+      // Re-register with saved local data
       handleOnboardingComplete(savedFriend);
     } else {
       setShowOnboarding(true);
     }
-  }, [isAdmin, targetUserId, user, guestListDoc, isGuestListLoading]);
+  }, [isAdmin, targetUserId, user, guestListDoc, isGuestListLoading, activeGuestId]);
 
   // Handle Mobile Profile Collapse
   useEffect(() => {
@@ -189,7 +209,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   };
 
   const togglePurchased = async (id: string) => {
-    if (!firestore || !targetUserId || !user) return;
+    if (!firestore || !targetUserId || !user || !activeGuestId) return;
     
     const item = items?.find(i => i.id === id);
     if (!item) return;
@@ -204,24 +224,24 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       
       const status = sharedStatuses?.find(s => s.itemId === id);
       const fulfills = status?.fulfillments || {};
-      const isFulfilledByMe = !!fulfills[user.uid];
+      const isFulfilledByMe = !!fulfills[activeGuestId];
 
       const sharedDocRef = doc(firestore, 'sharedWishlistStatuses', id);
       
       if (isFulfilledByMe) {
-        // Untick
+        // Untick using our persistent ID
         await updateDoc(sharedDocRef, {
-          [`fulfillments.${user.uid}`]: deleteField()
+          [`fulfillments.${activeGuestId}`]: deleteField()
         });
         toast({ title: "Unmarked", description: "You've removed your fulfillment tag." });
       } else {
-        // Tick
+        // Tick using our persistent ID
         await setDoc(sharedDocRef, {
           userId: targetUserId,
           itemId: id,
           tickedOff: true,
           fulfillments: {
-            [user.uid]: {
+            [activeGuestId]: {
               friendName: friendData.shareName ? friendData.name : 'Anonymous',
               shareName: friendData.shareName,
               timestamp: Date.now()
@@ -247,28 +267,28 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   const handleOnboardingComplete = async (data: { name: string; shareName: boolean; reclaimedId?: string }) => {
     if (!firestore || !targetUserId || !user) return;
     
-    localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(data));
+    // The persistent identity is either the one we reclaimed or our current one
+    const persistentId = data.reclaimedId || user.uid;
+    
+    const storageData = { ...data, persistentId };
+    localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(storageData));
     setFriendName(data.name);
     setShowOnboarding(false);
 
-    // Save to guest Map
+    // Update the guest list using the persistent ID as the key
     const guestDocRef = doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
     
-    // If we're reclaiming an identity and it's a different ID than our current session,
-    // we "migrate" the name to the new ID and remove the old one to prevent duplicates.
     const updates: Record<string, any> = {
-      [`guests.${user.uid}`]: {
+      [`guests.${persistentId}`]: {
         name: data.name,
         shareName: data.shareName,
         timestamp: Date.now()
       }
     };
 
-    if (data.reclaimedId && data.reclaimedId !== user.uid) {
-      updates[`guests.${data.reclaimedId}`] = deleteField();
-    }
-
-    await updateDoc(guestDocRef, updates);
+    // If we've just created a new identity while logged in as a different anonymous user,
+    // we don't need to do anything extra. The key in the guest Map is what matters.
+    await setDoc(guestDocRef, updates, { merge: true });
   };
 
   const restoreProfile = () => {
@@ -430,7 +450,8 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
             const fulfillmentsList = Object.values(fulfillments);
             
             const isFulfilled = isAdmin ? item.purchased : fulfillmentsList.length > 0;
-            const isFulfilledByMe = user ? !!fulfillments[user.uid] : false;
+            // Use activeGuestId to correctly identify if "I" (the persistent guest) ticked this
+            const isFulfilledByMe = activeGuestId ? !!fulfillments[activeGuestId] : false;
 
             return (
               <WishlistItemCard 
