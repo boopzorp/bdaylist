@@ -31,9 +31,8 @@ export default function WishlistItemCard({
   const isFulfilled = item.purchased;
 
   const handleToggle = () => {
-    // If it's already fulfilled by someone else and I'm not the admin/fulfiller, I can't untick it
-    if (!isAdmin && isFulfilled && !isFulfilledByMe) return; 
-    
+    // Admin can always toggle. 
+    // Friends can always toggle their own participation, regardless of others.
     setIsTicking(true);
     onToggle();
     setTimeout(() => setIsTicking(false), 400);
@@ -57,7 +56,7 @@ export default function WishlistItemCard({
               ? 'bg-primary border-primary text-primary-foreground' 
               : 'border-border text-transparent hover:border-primary',
             isTicking && 'animate-tick-pop',
-            (!isAdmin && isFulfilled && !isFulfilledByMe) && 'cursor-default opacity-50'
+            isFulfilledByMe && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
           )}
         >
           <Check size={12} strokeWidth={3} />

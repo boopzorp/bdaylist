@@ -226,7 +226,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       const savedFriend = localStorage.getItem(`friend_data_${targetUserId}`);
       const friendData = savedFriend ? JSON.parse(savedFriend) : { name: friendName, shareName: false };
       
-      const status = sharedStatuses?.find(s => s.itemId === id);
+      const status = sharedStatuses?.find(s => s.id === id);
       const fulfills = status?.fulfillments || {};
       const isFulfilledByMe = !!fulfills[activeGuestId];
 
@@ -458,7 +458,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       <div className="space-y-1 md:space-y-2">
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => {
-            const status = sharedStatuses?.find(s => s.itemId === item.id);
+            const status = sharedStatuses?.find(s => s.id === item.id);
             const fulfillments = status?.fulfillments || {};
             const fulfillmentsList = Object.values(fulfillments);
             
