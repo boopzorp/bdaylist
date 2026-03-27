@@ -62,19 +62,21 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Identity logic for friends: Determine which ID we are acting as
+  // We MUST include friendName in dependencies so it re-calculates after onboarding completion
   const activeGuestId = useMemo(() => {
     if (isAdmin || !targetUserId || !user) return null;
-    const savedFriendStr = localStorage.getItem(`friend_data_${targetUserId}`);
+    const savedFriendStr = typeof window !== 'undefined' ? localStorage.getItem(`friend_data_${targetUserId}`) : null;
     if (savedFriendStr) {
       try {
         const saved = JSON.parse(savedFriendStr);
+        // Prioritize the persistentId (the one we reclaimed or first registered) over the current session UID
         return saved.persistentId || user.uid;
       } catch (e) {
         return user.uid;
       }
     }
     return user.uid;
-  }, [isAdmin, targetUserId, user]);
+  }, [isAdmin, targetUserId, user, friendName]);
 
   // Firestore Queries
   const itemsRef = useMemoFirebase(() => {
@@ -229,13 +231,13 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       const sharedDocRef = doc(firestore, 'sharedWishlistStatuses', id);
       
       if (isFulfilledByMe) {
-        // Untick using our persistent ID
+        // Untick: specifically remove THIS guest's key
         await updateDoc(sharedDocRef, {
           [`fulfillments.${activeGuestId}`]: deleteField()
         });
         toast({ title: "Unmarked", description: "You've removed your fulfillment tag." });
       } else {
-        // Tick using our persistent ID
+        // Tick: add THIS guest's key
         await setDoc(sharedDocRef, {
           userId: targetUserId,
           itemId: id,
@@ -272,6 +274,8 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     
     const storageData = { ...data, persistentId };
     localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(storageData));
+    
+    // Updating this state triggers the activeGuestId useMemo to re-calculate
     setFriendName(data.name);
     setShowOnboarding(false);
 
@@ -286,8 +290,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       }
     };
 
-    // If we've just created a new identity while logged in as a different anonymous user,
-    // we don't need to do anything extra. The key in the guest Map is what matters.
     await setDoc(guestDocRef, updates, { merge: true });
   };
 
