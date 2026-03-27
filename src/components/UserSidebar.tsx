@@ -44,8 +44,22 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
   const { data: guestListDoc } = useDoc(friendsQuery);
   
   const guestList = useMemo(() => {
-    if (!guestListDoc?.guests) return [];
-    return Object.values(guestListDoc.guests) as any[];
+    if (!guestListDoc) return [];
+    
+    // RESILIENCE: Handle both nested map 'guests' and flattened fields 'guests.UID'
+    const rawData = guestListDoc as any;
+    const guestMap = { ...(rawData.guests || {}) } as Record<string, any>;
+    
+    Object.keys(rawData).forEach(key => {
+      if (key.startsWith('guests.')) {
+        const id = key.split('.')[1];
+        if (!guestMap[id]) {
+          guestMap[id] = rawData[key];
+        }
+      }
+    });
+
+    return Object.values(guestMap) as any[];
   }, [guestListDoc]);
 
   if (!mounted) return null;

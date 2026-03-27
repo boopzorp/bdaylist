@@ -62,14 +62,12 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Identity logic for friends: Determine which ID we are acting as
-  // We MUST include friendName in dependencies so it re-calculates after onboarding completion
   const activeGuestId = useMemo(() => {
     if (isAdmin || !targetUserId || !user) return null;
     const savedFriendStr = typeof window !== 'undefined' ? localStorage.getItem(`friend_data_${targetUserId}`) : null;
     if (savedFriendStr) {
       try {
         const saved = JSON.parse(savedFriendStr);
-        // Prioritize the persistentId (the one we reclaimed or first registered) over the current session UID
         return saved.persistentId || user.uid;
       } catch (e) {
         return user.uid;
@@ -114,7 +112,19 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   useEffect(() => {
     if (isAdmin || !targetUserId || !user || isGuestListLoading) return;
 
-    const guestMap = (guestListDoc?.guests || {}) as Record<string, any>;
+    // RESILIENCE: Merge map-based guests and flat-field-based guests (from previous dots-in-names bug)
+    const rawData = guestListDoc || {};
+    const guestMap = { ...(rawData.guests || {}) } as Record<string, any>;
+    
+    // Check for flat fields like "guests.UID"
+    Object.keys(rawData).forEach(key => {
+      if (key.startsWith('guests.')) {
+        const id = key.split('.')[1];
+        if (!guestMap[id]) {
+          guestMap[id] = rawData[key];
+        }
+      }
+    });
     
     // Check if my current session or my persistent ID is in the guestbook
     const myProfileInGuestbook = guestMap[user.uid] || (activeGuestId ? guestMap[activeGuestId] : null);
@@ -133,7 +143,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       setFriendName(friendData.name);
       setShowOnboarding(false);
     } else if (savedFriend) {
-      // Re-register with saved local data
       handleOnboardingComplete(savedFriend);
     } else {
       setShowOnboarding(true);
@@ -231,13 +240,11 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
       const sharedDocRef = doc(firestore, 'sharedWishlistStatuses', id);
       
       if (isFulfilledByMe) {
-        // Untick: specifically remove THIS guest's key
         await updateDoc(sharedDocRef, {
           [`fulfillments.${activeGuestId}`]: deleteField()
         });
         toast({ title: "Unmarked", description: "You've removed your fulfillment tag." });
       } else {
-        // Tick: add THIS guest's key
         await setDoc(sharedDocRef, {
           userId: targetUserId,
           itemId: id,
@@ -269,24 +276,23 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   const handleOnboardingComplete = async (data: { name: string; shareName: boolean; reclaimedId?: string }) => {
     if (!firestore || !targetUserId || !user) return;
     
-    // The persistent identity is either the one we reclaimed or our current one
     const persistentId = data.reclaimedId || user.uid;
-    
     const storageData = { ...data, persistentId };
     localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(storageData));
     
-    // Updating this state triggers the activeGuestId useMemo to re-calculate
     setFriendName(data.name);
     setShowOnboarding(false);
 
-    // Update the guest list using the persistent ID as the key
     const guestDocRef = doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
     
-    const updates: Record<string, any> = {
-      [`guests.${persistentId}`]: {
-        name: data.name,
-        shareName: data.shareName,
-        timestamp: Date.now()
+    // Correctly nested object for Map merging in Firestore
+    const updates = {
+      guests: {
+        [persistentId]: {
+          name: data.name,
+          shareName: data.shareName,
+          timestamp: Date.now()
+        }
       }
     };
 
@@ -301,8 +307,22 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
   };
 
   const existingGuestList = useMemo(() => {
-    if (!guestListDoc?.guests) return [];
-    return Object.entries(guestListDoc.guests).map(([id, data]: [string, any]) => ({
+    if (!guestListDoc) return [];
+    
+    // RESILIENCE: Merge map-based guests and flat-field-based guests
+    const rawData = guestListDoc as any;
+    const guestMap = { ...(rawData.guests || {}) } as Record<string, any>;
+    
+    Object.keys(rawData).forEach(key => {
+      if (key.startsWith('guests.')) {
+        const id = key.split('.')[1];
+        if (!guestMap[id]) {
+          guestMap[id] = rawData[key];
+        }
+      }
+    });
+
+    return Object.entries(guestMap).map(([id, data]: [string, any]) => ({
       id,
       name: data.name,
       shareName: data.shareName
@@ -452,7 +472,6 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
             const fulfillmentsList = Object.values(fulfillments);
             
             const isFulfilled = isAdmin ? item.purchased : fulfillmentsList.length > 0;
-            // Use activeGuestId to correctly identify if "I" (the persistent guest) ticked this
             const isFulfilledByMe = activeGuestId ? !!fulfillments[activeGuestId] : false;
 
             return (
