@@ -244,7 +244,7 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
     setEditingItem(null);
   };
 
-  const handleOnboardingComplete = async (data: { name: string; shareName: boolean }) => {
+  const handleOnboardingComplete = async (data: { name: string; shareName: boolean; reclaimedId?: string }) => {
     if (!firestore || !targetUserId || !user) return;
     
     localStorage.setItem(`friend_data_${targetUserId}`, JSON.stringify(data));
@@ -253,15 +253,22 @@ export default function WishlistPanel({ isAdmin, targetUserId, isProfileCollapse
 
     // Save to guest Map
     const guestDocRef = doc(firestore, 'userProfiles', targetUserId, 'guests', 'list');
-    await setDoc(guestDocRef, {
-      guests: {
-        [user.uid]: {
-          name: data.name,
-          shareName: data.shareName,
-          timestamp: Date.now()
-        }
+    
+    // If we're reclaiming an identity and it's a different ID than our current session,
+    // we "migrate" the name to the new ID and remove the old one to prevent duplicates.
+    const updates: Record<string, any> = {
+      [`guests.${user.uid}`]: {
+        name: data.name,
+        shareName: data.shareName,
+        timestamp: Date.now()
       }
-    }, { merge: true });
+    };
+
+    if (data.reclaimedId && data.reclaimedId !== user.uid) {
+      updates[`guests.${data.reclaimedId}`] = deleteField();
+    }
+
+    await updateDoc(guestDocRef, updates);
   };
 
   const restoreProfile = () => {

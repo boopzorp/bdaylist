@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 interface FriendOnboardingDialogProps {
   open: boolean;
   existingGuests: { id: string; name: string; shareName: boolean }[];
-  onComplete: (data: { name: string; shareName: boolean }) => void;
+  onComplete: (data: { name: string; shareName: boolean; reclaimedId?: string }) => void;
 }
 
 export default function FriendOnboardingDialog({ open, existingGuests, onComplete }: FriendOnboardingDialogProps) {
@@ -45,8 +45,8 @@ export default function FriendOnboardingDialog({ open, existingGuests, onComplet
     onComplete({ name, shareName });
   };
 
-  const handleSelectExisting = (guest: { name: string; shareName: boolean }) => {
-    onComplete({ name: guest.name, shareName: guest.shareName });
+  const handleSelectExisting = (guest: { id: string; name: string; shareName: boolean }) => {
+    onComplete({ name: guest.name, shareName: guest.shareName, reclaimedId: guest.id });
   };
 
   return (
