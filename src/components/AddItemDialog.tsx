@@ -44,7 +44,15 @@ export default function AddItemDialog({ open, onOpenChange, onAdd }: AddItemDial
     e.preventDefault();
     if (!name.trim()) return;
     
-    onAdd({ name, url, description, tags });
+    onAdd({
+      name,
+      url,
+      note: description,
+      category: tags[0] || 'Misc',
+      type: 'like',
+      purchased: false,
+      userId: '',
+    });
     onOpenChange(false);
     resetForm();
   };
