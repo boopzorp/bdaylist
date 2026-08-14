@@ -40,7 +40,9 @@ export default function Home() {
     
     // If we have a friend UID but no user, auto-sign in anonymously
     if (uParam && !user && !isUserLoading && auth) {
-      initiateAnonymousSignIn(auth);
+      initiateAnonymousSignIn(auth).catch((err) => {
+        console.error("Auto anonymous sign-in failed:", err);
+      });
     }
 
     const effectiveUserId = uParam || (user?.uid ?? null);
@@ -99,14 +101,18 @@ export default function Home() {
 
   const handleSetupComplete = async (data: { displayName: string; birthdate: string; quote: string; avatarUrl: string }) => {
     if (!user || !firestore) return;
-    const profileRef = doc(firestore, 'userProfiles', user.uid);
-    await setDoc(profileRef, {
-      id: user.uid,
-      ...data,
-      theme: theme,
-      createdAt: new Date().toISOString(),
-    });
-    setShowSetup(false);
+    try {
+      const profileRef = doc(firestore, 'userProfiles', user.uid);
+      await setDoc(profileRef, {
+        id: user.uid,
+        ...data,
+        theme: theme,
+        createdAt: new Date().toISOString(),
+      });
+      setShowSetup(false);
+    } catch (err) {
+      console.error("Error creating user profile:", err);
+    }
   };
 
   // Wait for hydration to avoid mismatch on browser-specific logic

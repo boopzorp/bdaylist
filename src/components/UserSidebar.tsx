@@ -81,10 +81,13 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
     });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (auth) {
-      initiateSignOut(auth);
-      window.location.href = '/';
+      try {
+        await initiateSignOut(auth);
+      } catch (e) {
+        console.error('Logout error:', e);
+      }
     }
   };
 

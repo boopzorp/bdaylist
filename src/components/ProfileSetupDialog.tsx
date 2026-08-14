@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
@@ -12,11 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Cake, Sparkles, User, Quote, Image as ImageIcon } from 'lucide-react';
+import { Cake, Sparkles, User, Quote, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 interface ProfileSetupDialogProps {
   open: boolean;
-  onComplete: (data: { displayName: string; birthdate: string; quote: string; avatarUrl: string }) => void;
+  onComplete: (data: { displayName: string; birthdate: string; quote: string; avatarUrl: string }) => Promise<void> | void;
 }
 
 export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDialogProps) {
@@ -24,16 +23,22 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
   const [birthdate, setBirthdate] = useState('');
   const [quote, setQuote] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!displayName || !birthdate) return;
-    onComplete({ 
-      displayName, 
-      birthdate, 
-      quote, 
-      avatarUrl: avatarUrl || `https://picsum.photos/seed/${Math.random()}/400/400`
-    });
+    if (!displayName.trim() || !birthdate) return;
+    setIsSubmitting(true);
+    try {
+      await onComplete({ 
+        displayName: displayName.trim(), 
+        birthdate, 
+        quote: quote.trim(), 
+        avatarUrl: avatarUrl.trim() || `https://picsum.photos/seed/${Math.random()}/400/400`
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -59,6 +64,7 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
                   placeholder="e.g. Birthday King" 
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
+                  disabled={isSubmitting}
                   className="pl-10 rounded-xl border-border/60 h-12 focus:ring-primary"
                   required
                 />
@@ -74,6 +80,7 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
                   placeholder="https://example.com/photo.jpg" 
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
+                  disabled={isSubmitting}
                   className="pl-10 rounded-xl border-border/60 h-12 focus:ring-primary"
                 />
               </div>
@@ -88,6 +95,7 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
                   type="date" 
                   value={birthdate}
                   onChange={(e) => setBirthdate(e.target.value)}
+                  disabled={isSubmitting}
                   className="pl-10 rounded-xl border-border/60 h-12 focus:ring-primary"
                   required
                 />
@@ -103,14 +111,23 @@ export default function ProfileSetupDialog({ open, onComplete }: ProfileSetupDia
                   placeholder="Focus on what matters." 
                   value={quote}
                   onChange={(e) => setQuote(e.target.value)}
+                  disabled={isSubmitting}
                   className="pl-10 rounded-xl border-border/60 min-h-[80px] focus:ring-primary resize-none"
                 />
               </div>
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground uppercase text-[11px] tracking-[0.3em] font-bold shadow-lg shadow-primary/20">
-            <Sparkles size={16} className="mr-2" /> Launch my BddayList
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground uppercase text-[11px] tracking-[0.3em] font-bold shadow-lg shadow-primary/20 transition-all duration-200"
+          >
+            {isSubmitting ? (
+              <><Loader2 size={16} className="mr-2 animate-spin" /> Launching Stream...</>
+            ) : (
+              <><Sparkles size={16} className="mr-2" /> Launch my BddayList</>
+            )}
           </Button>
         </form>
       </DialogContent>
