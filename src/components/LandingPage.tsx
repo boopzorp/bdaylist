@@ -15,9 +15,10 @@ import {
 interface LandingPageProps {
   currentTheme: string;
   onThemeChange: (theme: string) => void;
+  onAnonymousSuccess?: () => void;
 }
 
-export default function LandingPage({ currentTheme, onThemeChange }: LandingPageProps) {
+export default function LandingPage({ currentTheme, onThemeChange, onAnonymousSuccess }: LandingPageProps) {
   const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -136,6 +137,7 @@ export default function LandingPage({ currentTheme, onThemeChange }: LandingPage
           open={!!authMode} 
           onOpenChange={(open) => !open && setAuthMode(null)} 
           mode={authMode} 
+          onAnonymousSuccess={onAnonymousSuccess}
         />
       )}
     </div>

@@ -23,6 +23,7 @@ export default function Home() {
   const [isProfileCollapsed, setIsProfileCollapsed] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [isIntentionalAnonymousSetup, setIsIntentionalAnonymousSetup] = useState(false);
 
   // Handle hydration and read browser-only state
   useEffect(() => {
@@ -38,7 +39,7 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const uParam = params.get('u');
     
-    // If we have a friend UID but no user, auto-sign in anonymously
+    // If we have a friend UID but no user, auto-sign in anonymously for guest access
     if (uParam && !user && !isUserLoading && auth) {
       initiateAnonymousSignIn(auth).catch((err) => {
         console.error("Auto anonymous sign-in failed:", err);
@@ -69,11 +70,18 @@ export default function Home() {
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileRef);
 
+  const isRegisteredUser = !!user && !user.isAnonymous;
+  const isAnonymousWithProfile = !!user && user.isAnonymous && !!profile;
+  const shouldShowDashboard = isFriendMode || isRegisteredUser || isAnonymousWithProfile || isIntentionalAnonymousSetup;
+
   useEffect(() => {
     if (isUserLoading || isProfileLoading || !hasHydrated) return;
     
-    // If not logged in and not in friend mode, we show landing page
-    if (!user && !isFriendMode) return;
+    // If not showing dashboard (e.g. landing page visitor), do not show setup
+    if (!shouldShowDashboard) {
+      setShowSetup(false);
+      return;
+    }
 
     if (profile) {
       if (profile.theme && profile.theme !== theme) {
@@ -81,11 +89,11 @@ export default function Home() {
         localStorage.setItem('wishstream_theme', profile.theme);
       }
       setShowSetup(false);
-    } else if (user && user.uid === targetUserId && !isProfileLoading) {
-      // Only show setup if we are looking at our own profile and it doesn't exist
+    } else if (user && user.uid === targetUserId && !isProfileLoading && !isFriendMode) {
+      // Only show setup if looking at our own stream and profile doesn't exist
       setShowSetup(true);
     }
-  }, [profile, isProfileLoading, user, isUserLoading, targetUserId, isFriendMode, theme, hasHydrated]);
+  }, [profile, isProfileLoading, user, isUserLoading, targetUserId, isFriendMode, theme, hasHydrated, shouldShowDashboard]);
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
@@ -110,14 +118,14 @@ export default function Home() {
         createdAt: new Date().toISOString(),
       });
       setShowSetup(false);
+      setIsIntentionalAnonymousSetup(false);
     } catch (err) {
       console.error("Error creating user profile:", err);
     }
   };
 
-  // Wait for hydration to avoid mismatch on browser-specific logic
-  // Also wait for user if we are in friend mode to satisfy security rules
-  const isGlobalLoading = !hasHydrated || isUserLoading || (isFriendMode && !user) || (!!targetUserId && isProfileLoading);
+  // Global loading state: only wait when we need to load user/profile for the dashboard
+  const isGlobalLoading = !hasHydrated || isUserLoading || (isFriendMode && !user) || (shouldShowDashboard && !!targetUserId && isProfileLoading);
 
   if (isGlobalLoading) {
     return (
@@ -145,9 +153,18 @@ export default function Home() {
     );
   }
 
-  // If no user and no shared link being viewed, show landing page
-  if (!user && !isFriendMode) {
-    return <LandingPage currentTheme={theme} onThemeChange={handleThemeChange} />;
+  // If not in friend mode and not an owner with an account or setup, show Landing Page
+  if (!shouldShowDashboard) {
+    return (
+      <LandingPage 
+        currentTheme={theme} 
+        onThemeChange={handleThemeChange} 
+        onAnonymousSuccess={() => {
+          setIsIntentionalAnonymousSetup(true);
+          setShowSetup(true);
+        }}
+      />
+    );
   }
 
   return (
@@ -179,3 +196,4 @@ export default function Home() {
     </div>
   );
 }
+

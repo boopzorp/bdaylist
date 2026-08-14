@@ -36,6 +36,7 @@ interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'login' | 'signup';
+  onAnonymousSuccess?: () => void;
 }
 
 function getReadableAuthError(error: any): string {
@@ -67,7 +68,7 @@ function getReadableAuthError(error: any): string {
   }
 }
 
-export default function AuthDialog({ open, onOpenChange, mode: initialMode }: AuthDialogProps) {
+export default function AuthDialog({ open, onOpenChange, mode: initialMode, onAnonymousSuccess }: AuthDialogProps) {
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -163,8 +164,11 @@ export default function AuthDialog({ open, onOpenChange, mode: initialMode }: Au
     setSuccessMessage(null);
     setIsAnonymousLoading(true);
     try {
-      await initiateAnonymousSignIn(auth);
+      if (!auth.currentUser) {
+        await initiateAnonymousSignIn(auth);
+      }
       onOpenChange(false);
+      onAnonymousSuccess?.();
     } catch (err: any) {
       setError(getReadableAuthError(err));
     } finally {

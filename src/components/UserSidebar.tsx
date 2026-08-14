@@ -188,11 +188,16 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
             <div className="mt-12 flex flex-col gap-3 w-full max-w-[180px]">
               {isAdmin ? (
                 <>
+                  {user?.isAnonymous && (
+                    <div className="text-[8px] uppercase tracking-[0.2em] text-muted-foreground/60 text-center font-mono py-1 px-3 bg-muted/40 rounded-full border border-border/30 mb-1">
+                      Guest Stream
+                    </div>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={handleShare}
-                    className="rounded-full text-[9px] uppercase tracking-widest h-10 px-5 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all shadow-sm"
+                    className="rounded-full text-[9px] uppercase tracking-widest h-10 px-5 border-border/60 hover:bg-primary hover:text-primary-foreground transition-all shadow-sm font-medium"
                   >
                     <Share2 size={14} className="mr-2" /> Share BddayList
                   </Button>
@@ -206,9 +211,21 @@ export default function UserSidebar({ currentTheme, onThemeChange, isAdmin, targ
                   </Button>
                 </>
               ) : (
-                <div className="bg-muted/30 p-4 rounded-2xl border border-border/40 text-center">
-                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-light italic">Viewing Bdday Stream</span>
-                </div>
+                <>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => {
+                      window.location.href = '/';
+                    }}
+                    className="rounded-full text-[9px] uppercase tracking-widest h-10 px-5 bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm font-bold"
+                  >
+                    <Sparkles size={14} className="mr-2" /> Create Your Stream
+                  </Button>
+                  <div className="bg-muted/30 p-3 rounded-2xl border border-border/40 text-center">
+                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-light italic">Viewing Bdday Stream</span>
+                  </div>
+                </>
               )}
               
               <Button 
